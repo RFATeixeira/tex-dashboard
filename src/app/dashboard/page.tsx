@@ -1,0 +1,454 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebaseConfig";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  Timestamp,
+  QuerySnapshot,
+  DocumentData,
+} from "firebase/firestore";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import Sidebar from "../components/Sidebar";
+import Presentation from "../components/Presentation";
+import Link from "next/link";
+
+type TransactionBase = {
+  name: string;
+  value: number;
+  date: Timestamp;
+  createdAt?: Timestamp;
+  isParcel?: boolean;
+};
+
+type TransactionGanho = TransactionBase & {
+  type: "ganho";
+  originalValue?: number;
+};
+
+type TransactionGasto = TransactionBase & {
+  type: "gasto";
+  parcelNumber?: number;
+  totalParcelas?: number;
+  originalValue?: number;
+};
+
+type Transaction = TransactionGanho | TransactionGasto;
+
+type MonthlyData = {
+  [month: string]: { ganhos: number; gastos: number };
+};
+
+export default function DashboardPage() {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<
+    { name: string; ganhos: number; gastos: number }[]
+  >([]);
+  const [latestTransactions, setLatestTransactions] = useState<Transaction[]>(
+    []
+  );
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [selectedYear, setSelectedYear] = useState<number>(
+    new Date().getFullYear()
+  );
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        setUser(u);
+
+        const db = getFirestore();
+        const ganhosQuery = query(
+          collection(db, "ganhosData"),
+          where("userId", "==", u.uid)
+        );
+        const gastosQuery = query(
+          collection(db, "gastosData"),
+          where("userId", "==", u.uid)
+        );
+        const gastosCreditoQuery = query(
+          collection(db, "gastosCreditoData"),
+          where("userId", "==", u.uid)
+        );
+
+        try {
+          const [ganhosSnapshot, gastosSnapshot, gastosCreditoSnapshot] =
+            await Promise.all([
+              getDocs(ganhosQuery),
+              getDocs(gastosQuery),
+              getDocs(gastosCreditoQuery),
+            ]);
+
+          // Extrair todos os anos únicos dos dados
+          const yearsSet = new Set<number>();
+
+          const extractYears = (snapshot: QuerySnapshot<DocumentData>) => {
+            snapshot.docs.forEach((doc) => {
+              const data = doc.data();
+              let date: Date;
+
+              if (data.date instanceof Timestamp) {
+                date = data.date.toDate();
+              } else if (typeof data.date === "string") {
+                date = new Date(data.date);
+              } else {
+                console.error("Formato de data inválido:", data.date);
+                return;
+              }
+
+              yearsSet.add(date.getFullYear());
+            });
+          };
+
+          extractYears(ganhosSnapshot);
+          extractYears(gastosSnapshot);
+          extractYears(gastosCreditoSnapshot);
+
+          // Converter o Set para um array e ordenar
+          const uniqueYears = Array.from(yearsSet).sort();
+          setAvailableYears(uniqueYears);
+
+          // Se não houver anos disponíveis, não continue o processamento
+          if (uniqueYears.length === 0) {
+            setLoading(false);
+            return;
+          }
+
+          // Se o ano selecionado não estiver na lista, use o mais recente
+          if (!uniqueYears.includes(selectedYear)) {
+            setSelectedYear(uniqueYears[uniqueYears.length - 1]);
+          }
+
+          const MONTH_NAMES = [
+            "Jan",
+            "Fev",
+            "Mar",
+            "Abr",
+            "Mai",
+            "Jun",
+            "Jul",
+            "Ago",
+            "Set",
+            "Out",
+            "Nov",
+            "Dez",
+          ];
+
+          // Inicializar o objeto de dados para todos os meses do ano selecionado
+          const monthlyData: MonthlyData = {};
+          MONTH_NAMES.forEach((month) => {
+            monthlyData[month] = { ganhos: 0, gastos: 0 };
+          });
+
+          const processData = (
+            snapshot: QuerySnapshot<DocumentData>,
+            type: "ganhos" | "gastos"
+          ) => {
+            snapshot.docs.forEach((doc) => {
+              const data = doc.data();
+              let date: Date;
+
+              if (data.date instanceof Timestamp) {
+                date = data.date.toDate();
+              } else if (typeof data.date === "string") {
+                date = new Date(data.date);
+              } else {
+                console.error("Formato de data inválido:", data.date);
+                return;
+              }
+
+              // Verificar se a data está no ano selecionado
+              if (date.getFullYear() === selectedYear) {
+                const monthIndex = date.getMonth();
+                const monthName = MONTH_NAMES[monthIndex];
+                const value = Number(data.value) || 0;
+
+                monthlyData[monthName][type] += value;
+              }
+            });
+          };
+
+          // Processar os dados
+          processData(ganhosSnapshot, "ganhos");
+          processData(gastosSnapshot, "gastos");
+          processData(gastosCreditoSnapshot, "gastos");
+
+          // Formatar os dados para o gráfico
+          const chartData = MONTH_NAMES.map((month) => ({
+            name: month,
+            ganhos: monthlyData[month]?.ganhos || 0,
+            gastos: monthlyData[month]?.gastos || 0,
+          }));
+
+          console.log("Dados processados para o gráfico:", chartData);
+          setDashboardData(chartData);
+
+          function isGasto(
+            transaction: Transaction
+          ): transaction is TransactionGasto {
+            return (
+              transaction.type === "gasto" && "totalParcelas" in transaction
+            );
+          }
+
+          const combinedTransactions = [
+            ...ganhosSnapshot.docs.map((doc) => {
+              const data = doc.data();
+              return {
+                type: "ganho" as const,
+                name: data.name,
+                value: data.value,
+                date: data.date,
+                createdAt: data.createdAt || data.date, // Usar createdAt se existir, senão usar date
+                isParcel: data.isParcel || false,
+              };
+            }),
+            ...gastosSnapshot.docs.map((doc) => {
+              const data = doc.data();
+              return {
+                type: "gasto" as const,
+                name: data.name,
+                value: data.value,
+                date: data.date,
+                createdAt: data.createdAt || data.date,
+                isParcel: data.isParcel || false,
+              };
+            }),
+            ...gastosCreditoSnapshot.docs.map((doc) => {
+              const data = doc.data();
+              return {
+                type: "gasto" as const,
+                name: data.name,
+                value: data.value,
+                date: data.date,
+                createdAt: data.createdAt || data.date,
+                isParcel: data.isParcel || false,
+                parcelNumber: data.parcelNumber,
+                totalParcelas: data.totalParcelas, // Aqui a propriedade totalParcelas existe
+              };
+            }),
+          ];
+
+          const groupedTransactions = new Map();
+
+          combinedTransactions.forEach((transaction) => {
+            if (!transaction.isParcel) {
+              const key = `${
+                transaction.name
+              }-${transaction.createdAt?.toMillis()}-${transaction.type}`;
+              groupedTransactions.set(key, transaction);
+              return;
+            }
+
+            const key = `${
+              transaction.name
+            }-${transaction.createdAt?.toMillis()}-${transaction.type}`;
+
+            if (!groupedTransactions.has(key)) {
+              const newTransaction: Transaction = {
+                ...transaction,
+                name: isGasto(transaction)
+                  ? `${transaction.name} (${transaction.totalParcelas}x)` // Se for "gasto", adiciona as parcelas
+                  : transaction.name,
+                originalValue: isGasto(transaction)
+                  ? transaction.value * (transaction.totalParcelas || 1) // Se for "gasto", calcula o valor original
+                  : transaction.value, // Se for "ganho", mantém o valor
+              };
+              groupedTransactions.set(key, newTransaction);
+            }
+          });
+
+          // Converter de volta para array e ordenar por createdAt
+          const uniqueTransactions = Array.from(
+            groupedTransactions.values()
+          ) as Transaction[];
+          uniqueTransactions.sort((a, b) => {
+            const dateA = a.createdAt?.toDate() || new Date();
+            const dateB = b.createdAt?.toDate() || new Date();
+            return dateB.getTime() - dateA.getTime();
+          });
+
+          // Pegar as 3 transações mais recentes
+          setLatestTransactions(uniqueTransactions.slice(0, 3));
+        } catch (error) {
+          console.error("Erro ao buscar dados:", error);
+        }
+      } else {
+        router.replace("/login");
+      }
+
+      setLoading(false);
+    });
+
+    return () => unsubscribeAuth();
+  }, [router, selectedYear]);
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push("/login");
+  };
+
+  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const year = Number(event.target.value);
+    setSelectedYear(year);
+  };
+
+  // Função para formatar a data da transação
+  const formatTransactionDate = (transaction: Transaction) => {
+    // Se temos createdAt, usamos ele para mostrar quando a transação foi criada
+    if (transaction.createdAt instanceof Timestamp) {
+      return new Date(
+        transaction.createdAt.seconds * 1000
+      ).toLocaleDateString();
+    }
+    // Fallback para o campo date
+    if (transaction.date instanceof Timestamp) {
+      return new Date(transaction.date.seconds * 1000).toLocaleDateString();
+    }
+    return new Date(transaction.date).toLocaleDateString();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 text-gray-700">
+        Carregando...
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar onLogout={handleLogout} />
+      <main className="flex-1 py-4 px-8 lg:px-8 lg:py-8 text-gray-700">
+        <Presentation pageDescription="Seu sistema de dashboard mais completo." />
+        <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+
+        {/* Seção de seleção de ano */}
+        <div className="mb-4">
+          <label htmlFor="yearSelect" className="text-lg font-medium mr-4">
+            Selecione o ano:
+          </label>
+          {availableYears.length > 0 ? (
+            <select
+              id="yearSelect"
+              value={selectedYear}
+              onChange={handleYearChange}
+              className="p-2 rounded-lg border border-gray-300"
+            >
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="inline-block text-gray-500">Nenhum dado disponível</p>
+          )}
+        </div>
+
+        <div className="flex gap-6 justify-between flex-col md:flex-row">
+          {/* Seção do gráfico */}
+          <div className="bg-white rounded-2xl shadow p-6 w-full overflow-x-auto flex flex-col hover:shadow-2xl transition-all duration-200">
+            <h2 className="text-lg font-medium mb-4">
+              Gráfico de Gastos e Ganhos
+            </h2>
+            {availableYears.length > 0 ? (
+              <div className="w-full h-64 md:h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={dashboardData}
+                    barCategoryGap={10}
+                    barGap={4}
+                    onMouseMove={(state) => {
+                      if (state?.activeTooltipIndex !== undefined) {
+                        setActiveIndex(state.activeTooltipIndex);
+                      }
+                    }}
+                    onMouseLeave={() => setActiveIndex(null)}
+                  >
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                    <YAxis axisLine={false} tickLine={false} />
+                    <Tooltip />
+                    <Bar
+                      dataKey="ganhos"
+                      name="Ganhos"
+                      fill="#8b5cf6"
+                      radius={[8, 8, 8, 8]}
+                      barSize={20}
+                    />
+                    <Bar
+                      dataKey="gastos"
+                      name="Gastos"
+                      fill="#d4c1ff"
+                      radius={[8, 8, 8, 8]}
+                      barSize={20}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-64 md:h-80 text-gray-500">
+                Nenhum dado disponível para exibir no gráfico
+              </div>
+            )}
+          </div>
+
+          {/* Seção das últimas transações */}
+          <Link
+            href="/carteira"
+            className="w-full bg-white hover:shadow-2xl transition-all duration-200 rounded-2xl shadow p-6 overflow-x-auto flex flex-col"
+          >
+            <h4 className="text-lg font-medium mb-4">Últimas Transações</h4>
+            {latestTransactions.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                Sem transações registradas.
+              </p>
+            ) : (
+              latestTransactions.map((transaction, index) => (
+                <div
+                  key={index}
+                  className="mb-4 p-4 rounded-lg bg-[#efe7ff] flex justify-between items-center"
+                >
+                  <div className="flex justify-between flex-col">
+                    <span className="font-medium text-[#9E6EFE]">
+                      {transaction.name}
+                    </span>
+
+                    <div className="text-sm text-[#9E6EFE]">
+                      {formatTransactionDate(transaction)}
+                    </div>
+                  </div>
+                  <span className="text-[#9E6EFE] font-semibold">
+                    {transaction.type === "ganho"
+                      ? `+R$ ${(
+                          transaction.originalValue || transaction.value
+                        ).toFixed(2)}`
+                      : `-R$ ${(
+                          transaction.originalValue || transaction.value
+                        ).toFixed(2)}`}
+                  </span>
+                </div>
+              ))
+            )}
+          </Link>
+        </div>
+      </main>
+    </div>
+  );
+}
