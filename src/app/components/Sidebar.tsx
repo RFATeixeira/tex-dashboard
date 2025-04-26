@@ -51,16 +51,19 @@ export default function Sidebar({ onLogout }: SidebarProps) {
         <div className="flex flex-col justify-between h-full">
           <div>
             {/* Adiciona margem superior para o título ficar abaixo do menu hamburguer */}
-            <h2 className="text-2xl font-bold text-purple-600 mb-8 mt-14 lg:mt-0">
-              <div>
-                <span>T</span>
-                <span className="text-[#272727]">ex</span>
-              </div>
-              <div>
-                <span>D</span>
-                <span className="text-[#272727]">ashboard</span>
-              </div>
-            </h2>
+            <div className="flex flex-col items-center justify-center mb-8">
+              <img
+                className="w-40 h-40"
+                src="../../../TexFinanceDashboard_Logo_no_bg.png"
+                alt="Tex Finance Dashboard Logo"
+              />
+              <p className="text-gray-600 font-medium text-2xl text-center -mt-6 leading-5">
+                <span className="text-[#8B5CF6] font-semibold">T</span>ex{" "}
+                <span className="text-[#8B5CF6] font-semibold">F</span>
+                inance <span className="text-[#8B5CF6] font-semibold">D</span>
+                ashboard
+              </p>
+            </div>
             <nav className="space-y-4 text-gray-700">
               <Link
                 href="/dashboard"

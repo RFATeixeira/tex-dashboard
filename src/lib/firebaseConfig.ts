@@ -1,8 +1,8 @@
 // src/lib/firebaseConfig.ts
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApp, FirebaseApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage"; // Importando o Storage
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,8 +13,14 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
+let app: FirebaseApp;
+
+try {
+  app = getApp(); // Tenta pegar o app inicializado
+} catch (e) {
+  app = initializeApp(firebaseConfig); // Se não encontrar, inicializa o app
+}
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const storage = getStorage(app); // Exportando o Storage
+export const storage = getStorage(app);

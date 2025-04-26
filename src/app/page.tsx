@@ -35,7 +35,8 @@ export default function HomePage() {
           <h2 className="font-bold text-purple-600">
             <span>T</span>
             <span className="text-[#272727]">ex </span>
-
+            <span>F</span>
+            <span className="text-[#272727]">inance </span>
             <span>D</span>
             <span className="text-[#272727]">ashboard</span>
           </h2>
