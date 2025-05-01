@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   CreditCardIcon,
@@ -87,12 +86,9 @@ export default function Sidebar({ onLogout }: SidebarProps) {
                 Carteira
               </Link>
 
-              {/* Link desabilitado (transações) */}
               <Link
-                href="/dashboard"
-                className={`flex items-center gap-3 p-2 rounded-lg hover:bg-purple-100 hover:text-purple-600 transition-all ${
-                  !isPageReady ? "pointer-events-none text-gray-400" : ""
-                }`}
+                href="/transaction"
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-purple-100 hover:text-purple-600 transition-all"
               >
                 <ShoppingCartIcon className="h-5 w-5" />
                 Transações

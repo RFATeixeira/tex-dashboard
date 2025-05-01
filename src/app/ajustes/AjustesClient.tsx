@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebaseConfig";
+import { auth, db } from "@/lib/firebaseConfig";
 import {
   onAuthStateChanged,
   signOut,
@@ -11,11 +11,20 @@ import {
   updateProfile,
   deleteUser,
   User,
+  signInWithEmailAndPassword,
+  getAuth,
 } from "firebase/auth";
-import { getFirestore, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  updateDoc,
+  deleteDoc,
+  setDoc,
+  getDoc,
+} from "firebase/firestore";
 import Sidebar from "../components/Sidebar";
 import Presentation from "../components/Presentation";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { validateImageUrl } from "../../lib/validateImageUrl";
 
 export default function SettingsPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -28,13 +37,21 @@ export default function SettingsPage() {
   const [imageError, setImageError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
+  const [creditoMaximo, setCreditoMaximo] = useState(1000);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
       if (u) {
         setUser(u);
         setEmail(u.email || "");
         setName(u.displayName || "");
+
+        const userSettingsRef = doc(db, "users", u.uid);
+        const userSettingsSnap = await getDoc(userSettingsRef);
+        if (userSettingsSnap.exists()) {
+          const data = userSettingsSnap.data();
+          if (data.creditoMaximo) setCreditoMaximo(data.creditoMaximo);
+        }
       } else {
         router.replace("/login");
       }
@@ -50,9 +67,6 @@ export default function SettingsPage() {
     router.push("/login");
   };
 
-  const validateImageUrl = (url: string): boolean =>
-    /\.(jpeg|jpg|png|gif)$/i.test(url);
-
   const handleProfileImageUpdate = async () => {
     if (!profileImageUrl || !validateImageUrl(profileImageUrl)) {
       setImageError(
@@ -66,10 +80,25 @@ export default function SettingsPage() {
     try {
       const db = getFirestore();
       const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, { profileImage: profileImageUrl });
+
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        await updateDoc(userRef, { profileImage: profileImageUrl });
+      } else {
+        await setDoc(userRef, {
+          profileImage: profileImageUrl,
+          name: user.displayName || "Usuário",
+          email: user.email,
+          uid: user.uid,
+        });
+      }
+
+      await updateProfile(user, { photoURL: profileImageUrl });
+
       setMessage("Imagem de perfil atualizada com sucesso!");
       setImageError(null);
-    } catch {
+    } catch (err) {
+      console.error("Erro ao atualizar a imagem:", err);
       setMessage("Erro ao atualizar a imagem.");
     }
   };
@@ -97,12 +126,15 @@ export default function SettingsPage() {
   const handleNameChange = async () => {
     if (!name || !user) return;
     try {
-      await updateProfile(user, { displayName: name });
       const db = getFirestore();
       const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, { name });
+
+      await setDoc(userRef, { name }, { merge: true });
+      await updateProfile(user, { displayName: name });
+
       setMessage("Nome atualizado com sucesso!");
-    } catch {
+    } catch (error) {
+      console.error("Erro ao atualizar o nome:", error);
       setMessage("Erro ao atualizar o nome.");
     }
   };
@@ -136,6 +168,11 @@ export default function SettingsPage() {
       </div>
     );
   }
+
+  // Verificar se o provedor é Google
+  const isGoogleUser = user?.providerData.some(
+    (provider) => provider.providerId === "google.com"
+  );
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -188,53 +225,109 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Atualização de e-mail */}
-        <div className="mb-6">
-          <h2 className="text-lg font-medium mb-2">E-mail</h2>
-          <div className="flex flex-col md:flex-row gap-4">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            <button
-              onClick={handleEmailChange}
-              className="h-14 md:w-80 sm:w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6"
-            >
-              Atualizar E-mail
-            </button>
+        {/* Se o usuário estiver logado com Google, não permite alterar e-mail nem senha */}
+        {user?.email && isGoogleUser ? (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-lg font-medium mb-2">E-mail</h2>
+              <div className="flex flex-col md:flex-row gap-4">
+                <input
+                  type="email"
+                  disabled
+                  value={email}
+                  className="h-14 border bg-gray-200 border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <button className="h-14 md:w-80 sm:w-full bg-purple-400 text-white rounded-lg px-6">
+                  Provedor Google
+                </button>
+              </div>
+            </div>
+            <div className="mb-6">
+              <h2 className="text-lg font-medium mb-2">Senha</h2>
+              <div className="flex flex-col md:flex-row gap-4">
+                <input
+                  type="password"
+                  disabled
+                  value="******"
+                  className="h-14 border bg-gray-200 border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <button className="h-14 md:w-80 sm:w-full bg-purple-400 text-white rounded-lg px-6">
+                  Provedor Google
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Atualização de e-mail */}
+            <div className="mb-6">
+              <h2 className="text-lg font-medium mb-2">E-mail</h2>
+              <div className="flex flex-col md:flex-row gap-4">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <button
+                  onClick={handleEmailChange}
+                  className="h-14 md:w-80 sm:w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6"
+                >
+                  Atualizar E-mail
+                </button>
+              </div>
+            </div>
 
-        {/* Atualização de senha */}
-        <div className="mb-6">
-          <h2 className="text-lg font-medium mb-2">Senha</h2>
-          <div className="flex flex-col md:flex-row gap-4">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            <button
-              onClick={handlePasswordChange}
-              className="h-14 md:w-80 sm:w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6"
-            >
-              Atualizar Senha
-            </button>
-          </div>
-        </div>
+            {/* Atualização de senha */}
+            <div className="mb-6">
+              <h2 className="text-lg font-medium mb-2">Senha</h2>
+              <div className="flex flex-col md:flex-row gap-4">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <button
+                  onClick={handlePasswordChange}
+                  className="h-14 md:w-80 sm:w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6"
+                >
+                  Atualizar Senha
+                </button>
+              </div>
+            </div>
 
-        {/* Botão de deletar conta */}
-        <div className="fixed bottom-8 right-8">
-          {/*<button
-            onClick={() => setShowModal(true)}
-            className="w-[16rem] h-12 bg-red-600 hover:bg-red-700 text-white rounded-lg"
-          >
-            Deletar Conta
-          </button>*/}
-        </div>
+            {/* Definir Crédito */}
+            <div className="mb-6">
+              <h2 className="text-lg font-medium mb-2">Limite de Crédito</h2>
+              <div className="flex flex-col md:flex-row gap-4">
+                <input
+                  type="number"
+                  value={creditoMaximo.toFixed(2)}
+                  onChange={(e) => setCreditoMaximo(Number(e.target.value))}
+                  className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <button
+                  onClick={async () => {
+                    if (!user) return;
+                    const db = getFirestore();
+                    await setDoc(
+                      doc(db, "users", user.uid),
+                      {
+                        userId: user.uid,
+                        creditoMaximo,
+                      },
+                      { merge: true }
+                    );
+                  }}
+                  className="h-14 md:w-80 sm:w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6"
+                >
+                  Atualizar Limite
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
       {/* Modal de confirmação */}

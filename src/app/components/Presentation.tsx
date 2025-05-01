@@ -20,29 +20,21 @@ export default function Presentation({ pageDescription }: PresentationProps) {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       if (authUser) {
         setUser(authUser);
-        setDescription(
-          pageDescription || "Seu sistema de dashboard mais completo."
-        );
+        setDescription(pageDescription || "Seu sistema de dashboard mais completo.");
 
+        // Busca as informações do usuário no Firestore
         const userDocRef = doc(db, "users", authUser.uid);
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
           const data = userDoc.data();
-          setProfileImage(
-            data.profileImage ||
-              "https://cdn.pixabay.com/photo/2012/04/26/19/43/profile-42914_960_720.png"
-          );
+          setProfileImage(data.profileImage || authUser.photoURL || "https://cdn.pixabay.com/photo/2012/04/26/19/43/profile-42914_960_720.png");
         } else {
-          setProfileImage(
-            "https://cdn.pixabay.com/photo/2012/04/26/19/43/profile-42914_960_720.png"
-          );
+          setProfileImage(authUser.photoURL || "https://cdn.pixabay.com/photo/2012/04/26/19/43/profile-42914_960_720.png");
         }
       } else {
         setUser(null);
-        setDescription(
-          pageDescription || "Seu sistema de dashboard mais completo."
-        );
+        setDescription(pageDescription || "Seu sistema de dashboard mais completo.");
         setProfileImage(null);
       }
     });
@@ -65,10 +57,7 @@ export default function Presentation({ pageDescription }: PresentationProps) {
 
       <Link href="/ajustes" className="flex justify-end items-center gap-4">
         <img
-          src={
-            profileImage ||
-            "https://cdn.pixabay.com/photo/2012/04/26/19/43/profile-42914_960_720.png"
-          }
+          src={profileImage || "https://cdn.pixabay.com/photo/2012/04/26/19/43/profile-42914_960_720.png"}
           alt="Imagem de perfil"
           className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-lg"
         />

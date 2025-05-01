@@ -2,8 +2,13 @@ import { auth } from "./firebaseConfig";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithCredential
 } from "firebase/auth";
+
+const provider = new GoogleAuthProvider(); // Adicionando o GoogleAuthProvider
 
 export const registerUser = async (
   email: string,
@@ -35,3 +40,16 @@ export const registerUser = async (
 
 export const loginUser = (email: string, password: string) =>
   signInWithEmailAndPassword(auth, email, password);
+
+// Função de login com Google
+export const loginWithGoogle = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return result; // Retorna o objeto completo
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("Ocorreu um erro desconhecido");
+  }
+};

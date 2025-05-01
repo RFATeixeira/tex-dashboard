@@ -8,7 +8,7 @@ import {
   updateProfile,
   onAuthStateChanged,
 } from "firebase/auth";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import Link from "next/link";
 
 export default function RegisterPage() {
@@ -29,7 +29,10 @@ export default function RegisterPage() {
     return () => unsubscribe();
   }, [router]);
 
-  const handleRegister = async () => {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+
     if (!name || !email || !password || !confirmPassword) {
       return setError("Preencha todos os campos.");
     }
@@ -44,25 +47,43 @@ export default function RegisterPage() {
         email,
         password
       );
-      await updateProfile(userCredential.user, { displayName: name });
 
-      // Salvar nome no Firestore (opcional)
+      await updateProfile(userCredential.user, {
+        displayName: name,
+      });
+
+      // Criar documento no Firestore com segurança
       const db = getFirestore();
-      await setDoc(doc(db, "users", userCredential.user.uid), {
+      const userRef = doc(db, "users", userCredential.user.uid);
+      await setDoc(userRef, {
         name,
         email,
-        createdAt: new Date(),
+        profileImage: userCredential.user.photoURL || "",
+        createdAt: serverTimestamp(),
       });
 
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      console.error(err);
+      switch (err.code) {
+        case "auth/email-already-in-use":
+          setError("Este e-mail já está em uso.");
+          break;
+        case "auth/invalid-email":
+          setError("E-mail inválido.");
+          break;
+        case "auth/weak-password":
+          setError("A senha deve ter pelo menos 6 caracteres.");
+          break;
+        default:
+          setError("Erro ao criar conta. Tente novamente.");
+      }
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
-      <div className=" fixed flex flex-col items-center justify-center top-0">
+      <div className="fixed flex flex-col items-center justify-center top-0">
         <img
           className="w-40 h-40"
           src="../../../TexFinanceDashboard_Logo_no_bg.png"
@@ -75,10 +96,14 @@ export default function RegisterPage() {
           ashboard
         </p>
       </div>
-      <div className="bg-white shadow-lg rounded-lg p-8 w-full sm:w-[90%] md:w-[60%] lg:w-[40%] xl:w-[30%]">
-        <h1 className="text-3xl font-semibold text-center text-purple-600 mb-6">
+
+      <form
+        onSubmit={handleRegister}
+        className="bg-white shadow-lg rounded-lg p-8 w-full sm:w-[90%] md:w-[60%] lg:w-[40%] xl:w-[30%]"
+      >
+        <p className="text-3xl font-semibold text-center text-purple-600 mb-6">
           Cadastro
-        </h1>
+        </p>
 
         <input
           type="text"
@@ -112,7 +137,7 @@ export default function RegisterPage() {
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
         <button
-          onClick={handleRegister}
+          type="submit"
           className="w-full bg-purple-500 hover:bg-purple-600 text-white py-3 rounded-lg transition duration-200 ease-in-out cursor-pointer"
         >
           Cadastrar
@@ -126,7 +151,7 @@ export default function RegisterPage() {
             </Link>
           </p>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

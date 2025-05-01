@@ -13,7 +13,12 @@ import {
 import Sidebar from "../components/Sidebar";
 import Presentation from "../components/Presentation";
 
-type EntryType = "ganhos" | "gastos" | "gastosCredito";
+type EntryType =
+  | "ganhos"
+  | "gastos"
+  | "gastosCredito"
+  | "ganhosValeAlim"
+  | "gastosValeAlim";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -93,12 +98,12 @@ export default function DashboardPage() {
       const createdAtTimestamp = Timestamp.now();
 
       if (type === "gastosCredito" && parcelas > 1) {
-        // Adicionando o Gasto Crédito parcelado
-        const currentMonth = new Date(date).getMonth();
+        const parcelGroupId = crypto.randomUUID(); // ou use sua própria lógica, como `${user.uid}-${Date.now()}`
+        const baseDate = new Date(date);
+
         for (let i = 0; i < parcelas; i++) {
-          const monthOffset = currentMonth + i;
-          const parcelDate = new Date(date);
-          parcelDate.setMonth(monthOffset);
+          const parcelDate = new Date(baseDate);
+          parcelDate.setMonth(baseDate.getMonth() + i);
 
           await addDoc(dataCollection, {
             name,
@@ -107,10 +112,11 @@ export default function DashboardPage() {
             userId: user.uid,
             parcelas,
             tipo: "gastoCredito",
-            createdAt: createdAtTimestamp, // Adicionando a data de criação
-            isParcel: true, // Indicando que é uma parcela
-            parcelNumber: i + 1, // Número da parcela
-            totalParcelas: parcelas, // Total de parcelas
+            createdAt: createdAtTimestamp,
+            isParcel: true,
+            parcelNumber: i + 1,
+            totalParcelas: parcelas,
+            parcelGroupId, // <-- identificador único para o grupo
           });
         }
       } else {
@@ -147,6 +153,10 @@ export default function DashboardPage() {
         {entries.type === "ganhos" && "Adicionar Ganho"}
         {entries.type === "gastos" && "Adicionar Gasto"}
         {entries.type === "gastosCredito" && "Adicionar Gasto Crédito"}
+        {entries.type === "ganhosValeAlim" &&
+          "Adicionar Ganho Vale Alimentação"}
+        {entries.type === "gastosValeAlim" &&
+          "Adicionar Gasto Vale Alimentação"}
       </h2>
 
       <label className="block mb-2 text-gray-700">Nome</label>
@@ -182,6 +192,8 @@ export default function DashboardPage() {
         <option value="ganhos">Ganho</option>
         <option value="gastos">Gasto</option>
         <option value="gastosCredito">Gasto Crédito</option>
+        <option value="ganhosValeAlim">Ganho Vale Alimentação</option>
+        <option value="gastosValeAlim">Gasto Vale Alimentação</option>
       </select>
 
       {entries.type === "gastosCredito" && (
