@@ -51,23 +51,20 @@ export default function TransactionClient() {
             getDocs(gastosCreditoQuery),
           ]);
 
-          const ganhosData = ganhosSnapshot.docs.map((doc) => doc.data());
+        const ganhosData = ganhosSnapshot.docs.map((doc) => doc.data());
 
-          const gastosData = gastosSnapshot.docs.map((doc) => {
-            const data = doc.data() as any; // ou defina um tipo específico se tiver
-            return { ...data, tipo: "débito" };
-          });
-          
-          const gastosCreditoData = gastosCreditoSnapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              ...data,
-              tipo: "crédito", // Sobrescreve sempre, mesmo que `data.tipo` exista
-            };
-          });          
+        const gastosData = gastosSnapshot.docs.map((doc) => {
+          const data = doc.data() as any; // ou defina um tipo específico se tiver
+          return { ...data, tipo: "débito" };
+        });
 
-          console.log("Gastos débito:", gastosData);
-          console.log("Gastos crédito:", gastosCreditoData);
+        const gastosCreditoData = gastosCreditoSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            ...data,
+            tipo: "crédito", // Sobrescreve sempre, mesmo que `data.tipo` exista
+          };
+        });
 
         const allGastosData = [...gastosData, ...gastosCreditoData];
 
@@ -291,13 +288,22 @@ export default function TransactionClient() {
                       </div>
                       <div className="flex justify-between">
                         <div className="text-sm text-gray-500">
-                          {gasto._parsedDateStr ||
-                            (typeof gasto.date === "string"
-                            ? gasto.date
-                            : gasto.date?.toDate().toLocaleDateString("pt-BR"))}
+                          {gasto.gastoDate
+                            ? typeof gasto.gastoDate === "string"
+                              ? gasto.gastoDate
+                              : gasto.gastoDate
+                                  .toDate()
+                                  .toLocaleDateString("pt-BR")
+                            : typeof gasto.date === "string"
+                              ? gasto.date
+                              : gasto.date
+                                  ?.toDate()
+                                  .toLocaleDateString("pt-BR")}
                         </div>
                         <div className="text-xs text-gray-400 italic">
-                          {gasto.tipo === "crédito" ? "Gasto no crédito" : "Gasto no débito"}
+                          {gasto.tipo === "crédito"
+                            ? "Gasto no crédito"
+                            : "Gasto no débito"}
                         </div>
                       </div>
                     </div>

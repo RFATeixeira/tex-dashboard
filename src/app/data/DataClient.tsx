@@ -92,31 +92,48 @@ export default function DashboardPage() {
       const db = getFirestore();
       const dataCollection = collection(db, `${type}Data`);
       const dateObj = new Date(date);
-      const timestamp = Timestamp.fromDate(dateObj);
+      const [year, month, day] = date.split("-").map(Number);
+      const dateAtMidnightInSaoPaulo = new Date(
+        Date.UTC(year, month - 1, day, 3, 0, 0)
+      );
+      const timestamp = Timestamp.fromDate(dateAtMidnightInSaoPaulo);
 
       // Criando um timestamp para o momento atual (data de criação)
       const createdAtTimestamp = Timestamp.now();
 
       if (type === "gastosCredito" && parcelas > 1) {
-        const parcelGroupId = crypto.randomUUID(); // ou use sua própria lógica, como `${user.uid}-${Date.now()}`
-        const baseDate = new Date(date);
+        const parcelGroupId = crypto.randomUUID();
+        const gastoDate = new Date(date); // data original do gasto
+        const createdAtTimestamp = Timestamp.now();
 
+        // Define a data da primeira parcela
+        let parcelStartDate = new Date(gastoDate);
+        const dia = parcelStartDate.getDate();
+
+        if (dia >= 8) {
+          // Avança para o dia 1 do próximo mês
+          parcelStartDate.setMonth(parcelStartDate.getMonth() + 1);
+          parcelStartDate.setDate(1);
+        }
+
+        // Criação das parcelas
         for (let i = 0; i < parcelas; i++) {
-          const parcelDate = new Date(baseDate);
-          parcelDate.setMonth(baseDate.getMonth() + i);
+          const parcelDate = new Date(parcelStartDate);
+          parcelDate.setMonth(parcelStartDate.getMonth() + i);
 
           await addDoc(dataCollection, {
             name,
             value: Number(value) / parcelas,
-            date: Timestamp.fromDate(parcelDate),
+            date: Timestamp.fromDate(parcelDate), // data da parcela
             userId: user.uid,
             parcelas,
             tipo: "gastoCredito",
             createdAt: createdAtTimestamp,
+            gastoDate: Timestamp.fromDate(gastoDate), // <-- data real do gasto
             isParcel: true,
             parcelNumber: i + 1,
             totalParcelas: parcelas,
-            parcelGroupId, // <-- identificador único para o grupo
+            parcelGroupId,
           });
         }
       } else {

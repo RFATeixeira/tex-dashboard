@@ -55,11 +55,15 @@ export default function WalletPage() {
 
   const creditoUsado = useMemo(() => {
     const now = new Date();
-    let nextMonth = now.getUTCMonth() + 1;
-    let year = now.getUTCFullYear();
+    const currentMonth = now.getUTCMonth();
+    const currentYear = now.getUTCFullYear();
+
+    // Calcular o mês seguinte
+    let nextMonth = currentMonth + 1;
+    let nextYear = currentYear;
     if (nextMonth > 11) {
       nextMonth = 0;
-      year += 1;
+      nextYear += 1;
     }
 
     const grupos = new Map<
@@ -67,8 +71,9 @@ export default function WalletPage() {
       { itemBase: (typeof gastosCredito)[0]; datas: Date[] }
     >();
 
+    // Agrupa parcelas por groupId
     gastosCredito.forEach((item) => {
-      const date = item.date?.toDate?.();
+      const date = item.date?.toDate?.(); // <- Alterado aqui
       if (!date) return;
 
       const group = grupos.get(item.parcelGroupId);
@@ -83,16 +88,29 @@ export default function WalletPage() {
     });
 
     let total = 0;
+
     grupos.forEach(({ itemBase, datas }) => {
-      const hasParcelaNoProximoMes = datas.some(
-        (d) => d.getUTCMonth() === nextMonth && d.getUTCFullYear() === year
+      const hasParcelaNoMesAtual = datas.some(
+        (d) =>
+          d.getUTCFullYear() === currentYear && d.getUTCMonth() === currentMonth
       );
 
-      if (hasParcelaNoProximoMes) {
+      const hasParcelaNoMesSeguinte = datas.some(
+        (d) => d.getUTCFullYear() === nextYear && d.getUTCMonth() === nextMonth
+      );
+
+      // Só considerar o grupo se há parcela no mês atual ou no mês seguinte
+      if (hasParcelaNoMesAtual || hasParcelaNoMesSeguinte) {
+        const parcelasFuturasOuAtual = datas.filter(
+          (d) =>
+            d.getUTCFullYear() > currentYear ||
+            (d.getUTCFullYear() === currentYear &&
+              d.getUTCMonth() >= currentMonth)
+        );
+
         const valor = Number(itemBase.value);
-        const qtdParcelas = Number(itemBase.parcelas);
-        if (!isNaN(valor) && !isNaN(qtdParcelas)) {
-          total += valor * qtdParcelas;
+        if (!isNaN(valor)) {
+          total += valor * parcelasFuturasOuAtual.length;
         }
       }
     });
@@ -160,7 +178,7 @@ export default function WalletPage() {
           doc.data()
         );
 
-        const allGastosData = [...gastosData, ...gastosCreditoData];
+        const allGastosData = [...gastosData];
 
         setGanhos(ganhosData);
         setGastos(allGastosData);
@@ -276,13 +294,16 @@ export default function WalletPage() {
       <Sidebar onLogout={() => signOut(auth)} />
       <main className="flex-1 p-8 text-gray-700">
         <Presentation pageDescription="Sua carteira de ganhos e gastos." />
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 w-full m">
           <h1 className="text-2xl font-bold mb-6">Carteira</h1>
+          {/* DEBITO */}
           <div className="bg-white rounded-2xl shadow p-6">
-            <div className="flex w-full justify-center p-2">
+            <div className="flex w-full justify-center p-2 flex-col xl:flex-row">
               {/* Seletor de Mês */}
-              <div className="flex items-center gap-4 mb-4 w-full">
-                <label className="text-sm font-medium">Mês:</label>
+              <div className="flex items-center justify-center md:justify-start gap-4 mb-4 w-full">
+                <label className="text-sm font-medium hidden md:contents">
+                  Mês:
+                </label>
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
@@ -295,14 +316,16 @@ export default function WalletPage() {
                   ))}
                 </select>
 
-                <label className="text-sm font-medium">Ano:</label>
+                <label className="text-sm font-medium hidden md:contents">
+                  Ano:
+                </label>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                   className="border rounded p-2 text-sm w-28"
                 >
                   {Array.from({ length: 11 }, (_, i) => {
-                    const year = 2020 + i; // de 2020 a 2030 (ajuste conforme necessário)
+                    const year = 2020 + i;
                     return (
                       <option key={year} value={year}>
                         {year}
@@ -311,20 +334,24 @@ export default function WalletPage() {
                   })}
                 </select>
               </div>
-              <h2 className="text-lg md:text-2xl font-medium  justify-center flex w-full">
+              <h2 className="text-lg md:text-2xl font-medium justify-center flex w-full">
                 Débito de {monthNames[selectedMonth]} de {selectedYear}
               </h2>
               <div className="w-full"></div>
             </div>
-            <div className="flex justify-between text-lg font-medium">
+            <div className="flex flex-col md:flex-row justify-between text-lg font-medium">
               <div className="flex flex-col items-center">
-                <p className="text-lg md:text-xl font-medium mb-4">Ganho</p>
-                <span className="text-green-500 text-left md:text-center">
+                <p className="text-lg md:text-xl font-medium mb-0 mt-3 md:mt-0 md:mb-4">
+                  Ganho
+                </p>
+                <span className="text-green-500 text-left md:text-center text-lg">
                   +R$ {totalGanhos.toFixed(2)}
                 </span>
               </div>
               <div className="flex flex-col items-center">
-                <p className="text-lg md:text-xl font-medium mb-4">Saldo</p>
+                <p className="text-lg md:text-xl font-medium mb-0 mt-3 md:mt-0 md:mb-4">
+                  Saldo
+                </p>
                 <span
                   className={`text-2xl font-bold text-center ${
                     saldo >= 0 ? "text-green-500" : "text-red-500"
@@ -336,23 +363,26 @@ export default function WalletPage() {
                 </span>
               </div>
               <div className="flex flex-col items-center">
-                <p className="text-lg md:text-xl font-medium mb-4">Gasto</p>
-                <span className="text-red-500 text-right md:text-center">
+                <p className="text-lg md:text-xl font-medium mb-0 mt-3 md:mt-0 md:mb-4">
+                  Gasto
+                </p>
+                <span className="text-red-500 text-right md:text-center text-lg">
                   -R$ {totalGastos.toFixed(2)}
                 </span>
               </div>
             </div>
           </div>
+          {/* CRÉDITO */}
           <div className="gap-6 w-full">
             <div className="flex flex-col items-center bg-white p-6 rounded-xl shadow gap-4">
               <h3 className="text-lg md:text-2xl font-medium  justify-center flex w-full">
                 Limite de Cŕedito
               </h3>
-              <div className="w-full flex flex-row">
-                <div className="flex justify-between w-full text-lg font-medium">
-                  <div className="flex flex-col items-start w-full">
+              <div className="w-full flex flex-col md:flex-row">
+                <div className="flex justify-center w-full text-lg font-medium">
+                  <div className="flex flex-col items-center md:items-start w-full">
                     <div className="flex flex-col items-center">
-                      <p className="text-lg md:text-xl font-medium mb-4">
+                      <p className="text-lg md:text-xl font-medium mb-0 mt-3 md:mt-0 md:mb-4">
                         Limite
                       </p>
                       <span className="text-blue-500 text-left md:text-center text-lg">
@@ -362,7 +392,7 @@ export default function WalletPage() {
                   </div>
                 </div>
                 <div className="flex flex-col items-center w-full">
-                  <p className="text-lg md:text-xl font-medium mb-4">
+                  <p className="text-lg md:text-xl font-medium mb-0 mt-3 md:mt-0 md:mb-4">
                     Restante
                   </p>
                   <span
@@ -375,9 +405,11 @@ export default function WalletPage() {
                     {`R$ ${(creditoMaximo - creditoUsado).toFixed(2)}`}
                   </span>
                 </div>
-                <div className="flex flex-col items-end w-full">
+                <div className="flex flex-col tems-center md:items-end w-full">
                   <div className="flex flex-col items-center">
-                    <p className="text-lg md:text-xl font-medium mb-4">Usado</p>
+                    <p className="text-lg md:text-xl font-medium mb-0 mt-3 md:mt-0 md:mb-4">
+                      Usado
+                    </p>
                     <span className="text-red-500 text-left md:text-center text-lg">
                       -R$ {creditoUsado.toFixed(2)}
                     </span>
@@ -386,11 +418,14 @@ export default function WalletPage() {
               </div>
             </div>
           </div>
+          {/* ALIMENTAÇÃO */}
           <div className="bg-white rounded-2xl shadow p-6">
-            <div className="flex w-full justify-center p-2">
+            <div className="flex w-full justify-center p-2 flex-col xl:flex-row">
               {/* Seletor de Mês */}
-              <div className="flex items-center gap-4 mb-4 w-full">
-                <label className="text-sm font-medium">Mês:</label>
+              <div className="flex items-center justify-center md:justify-start gap-4 mb-4 w-full">
+                <label className="text-sm font-medium hidden md:contents">
+                  Mês:
+                </label>
                 <select
                   value={selectedMonthVA}
                   onChange={(e) => setSelectedMonthVA(parseInt(e.target.value))}
@@ -403,7 +438,9 @@ export default function WalletPage() {
                   ))}
                 </select>
 
-                <label className="text-sm font-medium">Ano:</label>
+                <label className="text-sm font-medium hidden md:contents">
+                  Ano:
+                </label>
                 <select
                   value={selectedYearVA}
                   onChange={(e) => setSelectedYearVA(parseInt(e.target.value))}
@@ -420,20 +457,23 @@ export default function WalletPage() {
                 </select>
               </div>
               <h2 className="text-lg md:text-2xl font-medium  justify-center flex w-full">
-                Vale Alimentação de {monthNames[selectedMonthVA]} de{" "}
-                {selectedYearVA}
+                Vale Alim de {monthNames[selectedMonthVA]} de {selectedYearVA}
               </h2>
               <div className="w-full"></div>
             </div>
-            <div className="flex justify-between text-lg font-medium">
+            <div className="flex flex-col md:flex-row justify-between text-lg font-medium">
               <div className="flex flex-col items-center">
-                <p className="text-lg md:text-xl font-medium mb-4">Ganho</p>
+                <p className="text-lg md:text-xl font-medium mb-0 mt-3 md:mt-0 md:mb-4">
+                  Ganho
+                </p>
                 <span className="text-green-500 text-left md:text-center">
                   +R$ {totalGanhosValeAlim.toFixed(2)}
                 </span>
               </div>
               <div className="flex flex-col items-center">
-                <p className="text-lg md:text-xl font-medium mb-4">Saldo</p>
+                <p className="text-lg md:text-xl font-medium mb-0 mt-3 md:mt-0 md:mb-4">
+                  Saldo
+                </p>
                 <span
                   className={`text-2xl font-bold text-center ${
                     saldoValeAlim >= 0 ? "text-green-500" : "text-red-500"
@@ -445,7 +485,9 @@ export default function WalletPage() {
                 </span>
               </div>
               <div className="flex flex-col items-center">
-                <p className="text-lg md:text-xl font-medium mb-4">Gasto</p>
+                <p className="text-lg md:text-xl font-medium mb-0 mt-3 md:mt-0 md:mb-4">
+                  Gasto
+                </p>
                 <span className="text-red-500 text-right md:text-center">
                   -R$ {totalGastosValeAlim.toFixed(2)}
                 </span>
