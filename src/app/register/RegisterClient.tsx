@@ -19,6 +19,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [lastSeenNotifications, setLastSeenNotifications] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -60,6 +61,7 @@ export default function RegisterPage() {
         email,
         profileImage: userCredential.user.photoURL || "",
         createdAt: serverTimestamp(),
+        lastSeenNotifications,
       });
 
       router.push("/dashboard");

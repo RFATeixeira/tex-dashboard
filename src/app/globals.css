@@ -24,3 +24,33 @@ body {
   color: var(--foreground);
   font-family: var(--font-poppins), sans-serif;
 }
+
+input:-webkit-autofill {
+  background-color: #e0d3ff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #e0d3ff inset !important;
+  box-shadow: 0 0 0px 1000px #e0d3ff inset !important;
+}
+
+input:-moz-autofill {
+  background-color: #e0d3ff !important;
+  box-shadow: 0 0 0px 1000px #e0d3ff inset !important;
+}
+
+input:-ms-input-placeholder {
+  background-color: #e0d3ff !important;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}

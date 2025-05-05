@@ -231,7 +231,7 @@ export default function DashboardPage() {
       <button
         onClick={handleSave}
         disabled={saving === entries.type}
-        className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg disabled:opacity-50"
+        className="w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 text-white py-2 rounded-lg disabled:opacity-50"
       >
         {saving === entries.type ? "Salvando..." : "Salvar"}
       </button>

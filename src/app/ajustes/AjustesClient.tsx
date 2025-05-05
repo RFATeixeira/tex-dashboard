@@ -196,7 +196,7 @@ export default function SettingsPage() {
             />
             <button
               onClick={handleProfileImageUpdate}
-              className="h-14 md:w-80 sm:w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6"
+              className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
             >
               Atualizar Imagem
             </button>
@@ -218,7 +218,7 @@ export default function SettingsPage() {
             />
             <button
               onClick={handleNameChange}
-              className="h-14 md:w-80 sm:w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6"
+              className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
             >
               Atualizar Nome
             </button>
@@ -237,7 +237,7 @@ export default function SettingsPage() {
                   value={email}
                   className="h-14 border bg-gray-200 border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
-                <button className="h-14 md:w-80 sm:w-full bg-purple-400 text-white rounded-lg px-6">
+                <button className="h-14 md:w-80 sm:w-full bg-[#ae8bff] transition-all duration-200 text-white rounded-lg px-6">
                   Provedor Google
                 </button>
               </div>
@@ -251,7 +251,7 @@ export default function SettingsPage() {
                   value="******"
                   className="h-14 border bg-gray-200 border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
-                <button className="h-14 md:w-80 sm:w-full bg-purple-400 text-white rounded-lg px-6">
+                <button className="h-14 md:w-80 sm:w-full bg-[#ae8bff] transition-all duration-200 text-white rounded-lg px-6">
                   Provedor Google
                 </button>
               </div>
@@ -271,7 +271,7 @@ export default function SettingsPage() {
                 />
                 <button
                   onClick={handleEmailChange}
-                  className="h-14 md:w-80 sm:w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6"
+                  className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
                 >
                   Atualizar E-mail
                 </button>
@@ -290,7 +290,7 @@ export default function SettingsPage() {
                 />
                 <button
                   onClick={handlePasswordChange}
-                  className="h-14 md:w-80 sm:w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6"
+                  className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
                 >
                   Atualizar Senha
                 </button>
@@ -320,7 +320,7 @@ export default function SettingsPage() {
                       { merge: true }
                     );
                   }}
-                  className="h-14 md:w-80 sm:w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6"
+                  className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
                 >
                   Atualizar Limite
                 </button>

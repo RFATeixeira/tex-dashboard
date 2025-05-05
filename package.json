@@ -12,6 +12,8 @@
     "@heroicons/react": "^2.2.0",
     "@react-oauth/google": "^0.12.1",
     "date-fns": "^4.1.0",
+    "dayjs": "^1.11.13",
+    "dayjs-plugin-utc": "^0.1.2",
     "firebase": "^11.6.0",
     "lucide-react": "^0.503.0",
     "next": "15.3.1",
