@@ -18,6 +18,7 @@ import {
 import Sidebar from "../components/Sidebar";
 import Presentation from "../components/Presentation";
 import dayjs from "dayjs";
+import { updateDoc } from "firebase/firestore";
 import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
 
@@ -136,32 +137,33 @@ export default function TicketPage() {
   const handleAddTicket = async () => {
     try {
       const user = auth.currentUser;
-      console.log("Usuário:", user);
 
       if (user) {
-        console.log("ticketData:", ticketData);
-        console.log("Due Date:", dueDate);
-        console.log("Amount:", amount);
-        console.log("Boleto Code:", boletoCode);
-
-        const newTicket = {
-          ...ticketData,
-          createdAt: serverTimestamp(),
+        const ticketPayload = {
           title,
           dueDate: Timestamp.fromDate(dayjs(dueDate).startOf("day").toDate()),
           amount,
           boletoCode,
           userId: user.uid,
+          updatedAt: serverTimestamp(),
         };
 
-        await addDoc(collection(db, "tickets"), newTicket);
-        setMessage("Boleto adicionado com sucesso!");
+        if (isEditing && selectedTicket) {
+          const ticketRef = doc(db, "tickets", selectedTicket.id);
+          await updateDoc(ticketRef, ticketPayload);
+          setMessage("Boleto editado com sucesso!");
+
+          // 🔧 Resetando estados de edição
+          setIsEditing(false);
+          setSelectedTicket(null);
+        }
+
         setShowModal(false);
         fetchTickets(user.uid);
       }
     } catch (error) {
-      console.error("Erro ao adicionar boleto: ", error);
-      setMessage("Erro ao adicionar boleto.");
+      console.error("Erro ao salvar boleto: ", error);
+      setMessage("Erro ao salvar boleto.");
     }
   };
 
@@ -195,7 +197,7 @@ export default function TicketPage() {
     setSelectedTicket(ticket);
     setShowModal(true);
     setTitle(ticket.title);
-    setDueDate(ticket.dueDate);
+    setDueDate(dayjs(ticket.dueDate.toDate()).format("YYYY-MM-DD"));
     setAmount(ticket.amount);
     setBoletoCode(ticket.boletoCode);
   };
@@ -233,11 +235,11 @@ export default function TicketPage() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar onLogout={() => {}} />
       <main className="flex-1 p-6 md:p-8 text-gray-700">
-        <Presentation pageDescription="Gerencie seus Boletos." />
+        <Presentation pageDescription="Gerencie seus Boletos!" />
 
         <h1 className="text-2xl font-bold mb-6">Boletos</h1>
         <button
-          className="py-2 px-4 bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg"
+          className="py-2 px-4 bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-xl"
           onClick={handleOpenCreateModal}
         >
           Adicionar Boleto
@@ -250,8 +252,8 @@ export default function TicketPage() {
           {tickets.map((ticket) => (
             <div
               key={ticket.id}
-              className={`bg-white p-4 mb-4 rounded-2xl shadow-md relative overflow-hidden flex flex-row justify-between transition-all duration-300 ${
-                selectedTicket?.id === ticket.id ? "pr-52" : "pr-4"
+              className={`gap-2 bg-white p-4 mb-4 rounded-2xl shadow-md relative overflow-hidden flex flex-col xl:flex-row items-center xl:justify-between transition-all duration-300 ${
+                selectedTicket?.id === ticket.id ? "xl:pr-52" : "xl:pr-4"
               }`}
               onClick={() =>
                 setSelectedTicket(
@@ -259,8 +261,10 @@ export default function TicketPage() {
                 )
               }
             >
-              <div className="flex flex-col justify-center items-start gap-2">
-                <h3 className="font-semibold text-xl">{ticket.title}</h3>
+              <div className="flex flex-col justify-center items-center xl:items-start gap-2">
+                <h3 className="font-semibold text-xl text-center xl:text-start">
+                  {ticket.title}
+                </h3>
                 <p>
                   Valor:{" "}
                   <span className="text-red-500">
@@ -269,21 +273,21 @@ export default function TicketPage() {
                 </p>
               </div>
 
-              <div className="flex flex-col items-end justify-center gap-2">
+              <div className="flex flex-col items-center xl:items-end justify-center gap-2">
                 <p className="font-semibold">
                   Vencimento:{" "}
                   <span className="font-normal">
                     {getFormattedDate(ticket.dueDate)}
                   </span>
                 </p>
-                <div className="flex flex-row gap-2 items-center">
+                <div className="flex flex-col xl:flex-row gap-2 items-center">
                   <button
-                    className="py-2 px-4 bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg"
+                    className="py-2 px-4 bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-xl"
                     onClick={() => copyToClipboard(ticket.boletoCode)}
                   >
                     Copiar
                   </button>
-                  <p className="font-semibold">
+                  <p className="font-semibold text-center xl:text-start ">
                     Código:{" "}
                     <span className="font-normal">
                       {formatBoletoCode(ticket.boletoCode)}
@@ -294,14 +298,14 @@ export default function TicketPage() {
 
               {/* Botões deslizantes */}
               <div
-                className={`absolute top-1/2 -translate-y-1/2 right-4 flex gap-2 transition-all duration-300 ${
+                className={`xl:absolute xl:top-1/2 xl:-translate-y-1/2 xl:right-4 flex gap-2 transition-all duration-300 ${
                   selectedTicket?.id === ticket.id
-                    ? "translate-x-0 opacity-100"
-                    : "translate-x-full opacity-0 pointer-events-none"
+                    ? "xl:translate-x-0 opacity-100 "
+                    : "xl:translate-x-full opacity-0 pointer-events-none xl:translate-y-1/2 translate-y-6/3 -mt-10"
                 }`}
               >
                 <button
-                  className="bg-[#8B5CF6] hover:bg-[#6e3fdb] px-4 py-2 transition-all duration-200 cursor-pointer text-white rounded-lg"
+                  className="bg-[#8B5CF6] hover:bg-[#6e3fdb] px-4 py-2 transition-all duration-200 cursor-pointer text-white rounded-xl"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleEdit(ticket);
@@ -310,7 +314,7 @@ export default function TicketPage() {
                   Editar
                 </button>
                 <button
-                  className="bg-red-100 hover:bg-red-200 px-4 py-2 transition-all duration-200 cursor-pointer text-red-500 rounded-lg"
+                  className="bg-red-100 hover:bg-red-200 px-4 py-2 transition-all duration-200 cursor-pointer text-red-500 rounded-xl"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDelete(ticket.id);
@@ -328,7 +332,7 @@ export default function TicketPage() {
           <div className="fixed inset-0 backdrop-blur-[2px] flex justify-center items-center">
             <div
               ref={modalRef}
-              className="bg-white p-6 rounded-lg shadow-2xl w-96"
+              className="bg-white p-6 rounded-xl shadow-2xl w-96"
             >
               <h3 className="text-xl font-semibold mb-4">Adicionar Boleto</h3>
               <div className="mb-4">
@@ -339,7 +343,7 @@ export default function TicketPage() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-purple-600 rounded-lg focus:outline-0 placeholder:text-gray-700"
+                  className="w-full px-3 py-2 border border-purple-600 rounded-xl focus:outline-0 placeholder:text-gray-700"
                   placeholder="Título"
                 />
               </div>
@@ -351,7 +355,7 @@ export default function TicketPage() {
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-purple-600 rounded-lg focus:outline-0 "
+                  className="w-full px-3 py-2 border border-purple-600 rounded-xl focus:outline-0 "
                 />
               </div>
               <div className="mb-4">
@@ -360,7 +364,7 @@ export default function TicketPage() {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-purple-600 rounded-lg focus:outline-0 placeholder:text-gray-700"
+                  className="w-full px-3 py-2 border border-purple-600 rounded-xl focus:outline-0 placeholder:text-gray-700"
                   placeholder="Valor"
                 />
               </div>
@@ -372,20 +376,20 @@ export default function TicketPage() {
                   type="text"
                   value={boletoCode}
                   onChange={(e) => setBoletoCode(e.target.value)}
-                  className="w-full px-3 py-2 border border-purple-600 rounded-lg focus:outline-0 placeholder:text-gray-700"
+                  className="w-full px-3 py-2 border border-purple-600 rounded-xl focus:outline-0 placeholder:text-gray-700"
                   placeholder="Código"
                 />
               </div>
               <div className="flex justify-end gap-2">
                 <button
                   onClick={handleAddTicket}
-                  className="py-2 px-4 bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg"
+                  className="py-2 px-4 bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-xl"
                 >
                   Salvar
                 </button>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="py-2 px-4 bg-gray-300 hover:bg-gray-400 transition-all duration-200 cursor-pointer text-gray-700 rounded-lg"
+                  className="py-2 px-4 bg-gray-300 hover:bg-gray-400 transition-all duration-200 cursor-pointer text-gray-700 rounded-xl"
                 >
                   Cancelar
                 </button>
