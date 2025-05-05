@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import Sidebar from "../components/Sidebar";
 import Presentation from "../components/Presentation";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function TransactionClient() {
   const router = useRouter();
@@ -396,7 +397,7 @@ export default function TransactionClient() {
                     {itens.map((ganho, index) => (
                       <div
                         key={index}
-                        className={`relative mb-2 p-4 border border-gray-200 rounded-lg transition-all duration-300 hover:shadow-lg ${
+                        className={`relative mb-2 p-4 border overflow-hidden border-gray-200 rounded-lg transition-all duration-300 hover:shadow-lg ${
                           expandedCardId === `ganho-${mes}-${index}`
                             ? "pr-4 md:pr-36"
                             : ""
@@ -430,29 +431,38 @@ export default function TransactionClient() {
                           </div>
                         </div>
 
-                        {expandedCardId === `ganho-${mes}-${index}` && (
-                          <div className="flex flex-row gap-2 mt-2 md:mt-0 md:absolute h-full md:top-2 md:right-2 pb-0 md:pb-4">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(ganho.id, ganho.collection);
-                              }}
-                              className="text-sm bg-red-100 text-red-500 px-2 py-2 rounded cursor-pointer h-full w-full md:w-auto"
+                        <AnimatePresence mode="wait">
+                          {expandedCardId === `ganho-${mes}-${index}` && (
+                            <motion.div
+                              key={`actions-${mes}-${index}`}
+                              initial={{ opacity: 0, x: 100 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 100 }}
+                              transition={{ duration: 0.2 }}
+                              className="flex flex-row gap-2 mt-2 md:mt-0 md:absolute h-full items-center md:top-2 md:right-2 pb-0 md:pb-4"
                             >
-                              Excluir
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditItemData(ganho);
-                                setIsEditModalOpen(true);
-                              }}
-                              className="text-sm bg-[#8B5CF6] text-white px-2 py-2 rounded cursor-pointer h-full w-full md:w-auto"
-                            >
-                              Editar
-                            </button>
-                          </div>
-                        )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(ganho.id, ganho.collection);
+                                }}
+                                className="text-sm bg-red-100 text-red-500 px-2 py-2 h-fit rounded cursor-pointer w-full md:w-auto"
+                              >
+                                Excluir
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditItemData(ganho);
+                                  setIsEditModalOpen(true);
+                                }}
+                                className="text-sm bg-[#8B5CF6] text-white px-2 h-fit py-2 rounded cursor-pointer w-full md:w-auto"
+                              >
+                                Editar
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     ))}
                   </div>
@@ -471,7 +481,7 @@ export default function TransactionClient() {
                     {itens.map((gasto, index) => (
                       <div
                         key={index}
-                        className={`relative mb-2 p-4 border border-gray-200 rounded-lg transition-all duration-300 hover:shadow-lg ${
+                        className={`relative mb-2 p-4 border overflow-hidden border-gray-200 rounded-lg transition-all duration-300 hover:shadow-lg ${
                           expandedCardId === `${mes}-${index}`
                             ? "pr-4 md:pr-36"
                             : ""
@@ -511,29 +521,38 @@ export default function TransactionClient() {
                           </div>
                         </div>
 
-                        {expandedCardId === `${mes}-${index}` && (
-                          <div className="flex flex-row gap-2 mt-2 md:mt-0 md:absolute h-full md:top-2 md:right-2 pb-0 md:pb-4">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(gasto.id, gasto.collection);
-                              }}
-                              className="text-sm bg-red-100 text-red-500 px-2 py-2 rounded cursor-pointer h-full w-full md:w-auto"
+                        <AnimatePresence mode="wait">
+                          {expandedCardId === `${mes}-${index}` && (
+                            <motion.div
+                              key={`actions-${mes}-${index}`}
+                              initial={{ opacity: 0, x: 100 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 100 }}
+                              transition={{ duration: 0.2 }}
+                              className="flex flex-row gap-2 mt-2 md:mt-0 md:absolute h-full items-center md:top-2 md:right-2 pb-0 md:pb-4"
                             >
-                              Excluir
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditItemData(gasto);
-                                setIsEditModalOpen(true);
-                              }}
-                              className="text-sm bg-[#8B5CF6] text-white px-2 py-2 rounded cursor-pointer h-full w-full md:w-auto"
-                            >
-                              Editar
-                            </button>
-                          </div>
-                        )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(gasto.id, gasto.collection);
+                                }}
+                                className="text-sm bg-red-100 text-red-500 px-2 py-2 h-fit rounded cursor-pointer w-full md:w-auto"
+                              >
+                                Excluir
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditItemData(gasto);
+                                  setIsEditModalOpen(true);
+                                }}
+                                className="text-sm bg-[#8B5CF6] text-white px-2 h-fit py-2 rounded cursor-pointer w-full md:w-auto"
+                              >
+                                Editar
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     ))}
                   </div>

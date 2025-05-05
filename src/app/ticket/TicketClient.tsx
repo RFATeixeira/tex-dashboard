@@ -141,7 +141,7 @@ export default function TicketPage() {
       if (user) {
         const ticketPayload = {
           title,
-          dueDate: Timestamp.fromDate(dayjs(dueDate).startOf("day").toDate()),
+          dueDate: Timestamp.fromDate(dayjs(dueDate).startOf("day").toDate()), // Garantir que `dueDate` seja convertido para Timestamp
           amount,
           boletoCode,
           userId: user.uid,
@@ -152,12 +152,17 @@ export default function TicketPage() {
           const ticketRef = doc(db, "tickets", selectedTicket.id);
           await updateDoc(ticketRef, ticketPayload);
           setMessage("Boleto editado com sucesso!");
-
-          // 🔧 Resetando estados de edição
-          setIsEditing(false);
-          setSelectedTicket(null);
+        } else {
+          // Se não estiver editando, cria um novo boleto
+          console.log("dueDate:", dueDate);
+          await addDoc(collection(db, "tickets"), ticketPayload);
         }
 
+        // Resetar os campos após adicionar ou editar
+        setTitle("");
+        setDueDate("");
+        setAmount("");
+        setBoletoCode("");
         setShowModal(false);
         fetchTickets(user.uid);
       }
@@ -215,7 +220,6 @@ export default function TicketPage() {
       if (!user) return;
 
       await deleteDoc(doc(db, "tickets", title));
-      setMessage("Boleto apagado com sucesso!");
       fetchTickets(user.uid); // Atualiza a lista
     } catch (error) {
       console.error("Erro ao apagar boleto: ", error);
@@ -239,7 +243,7 @@ export default function TicketPage() {
 
         <h1 className="text-2xl font-bold mb-6">Boletos</h1>
         <button
-          className="py-2 px-4 bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-xl"
+          className="py-2 px-4 bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg"
           onClick={handleOpenCreateModal}
         >
           Adicionar Boleto

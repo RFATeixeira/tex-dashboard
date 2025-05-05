@@ -179,7 +179,7 @@ export default function SettingsPage() {
       <Sidebar onLogout={handleLogout} />
       <main className="flex-1 p-6 md:p-8 text-gray-700">
         <Presentation pageDescription="Altere os dados caso necessário." />
-        <h1 className="text-2xl font-bold mb-6">Configurações</h1>
+        <h1 className="text-2xl font-bold mb-6">Ajustes</h1>
 
         {message && <p className="mb-4 text-green-500">{message}</p>}
 
