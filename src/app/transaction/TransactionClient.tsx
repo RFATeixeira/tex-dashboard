@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebaseConfig";
+import { auth, db } from "@/lib/firebaseConfig";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import {
   getFirestore,
@@ -10,6 +10,9 @@ import {
   getDocs,
   query,
   where,
+  doc,
+  deleteDoc,
+  updateDoc,
 } from "firebase/firestore";
 import Sidebar from "../components/Sidebar";
 import Presentation from "../components/Presentation";
@@ -24,6 +27,10 @@ export default function TransactionClient() {
   const [totalGanhos, setTotalGanhos] = useState(0);
   const [totalGastos, setTotalGastos] = useState(0);
   const [sortOption, setSortOption] = useState("mes-desc");
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editItemData, setEditItemData] = useState<any>(null);
+  const db = getFirestore();
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
@@ -51,18 +58,33 @@ export default function TransactionClient() {
             getDocs(gastosCreditoQuery),
           ]);
 
-        const ganhosData = ganhosSnapshot.docs.map((doc) => doc.data());
+        const ganhosData = ganhosSnapshot.docs.map((doc) => {
+          const data = doc.data() as any;
+          return {
+            id: doc.id, // ← aqui
+            ...data,
+            tipo: "débito",
+            collection: "ganhosData",
+          };
+        });
 
         const gastosData = gastosSnapshot.docs.map((doc) => {
-          const data = doc.data() as any; // ou defina um tipo específico se tiver
-          return { ...data, tipo: "débito" };
+          const data = doc.data() as any;
+          return {
+            id: doc.id, // ← e aqui
+            ...data,
+            tipo: "débito",
+            collection: "gastosData",
+          };
         });
 
         const gastosCreditoData = gastosCreditoSnapshot.docs.map((doc) => {
-          const data = doc.data();
+          const data = doc.data() as any;
           return {
+            id: doc.id, // ← e aqui
             ...data,
-            tipo: "crédito", // Sobrescreve sempre, mesmo que `data.tipo` exista
+            tipo: "crédito",
+            collection: "gastosCreditoData",
           };
         });
 
@@ -162,6 +184,20 @@ export default function TransactionClient() {
     return sortedGrouped;
   };
 
+  const handleDelete = async (id: string, collectionName: string) => {
+    try {
+      console.log("Deletando:", { id, collectionName });
+      if (!id || !collectionName) {
+        console.error("ID ou nome da coleção ausente.");
+        return;
+      }
+      await deleteDoc(doc(db, collectionName, id));
+      alert("Transação deletada com sucesso");
+    } catch (error) {
+      console.error("Erro ao deletar transação:", error);
+    }
+  };
+
   const ganhosOrdenados = useMemo(() => {
     if (sortOption === "lancamento") {
       return {
@@ -205,6 +241,49 @@ export default function TransactionClient() {
     router.push("/login");
   };
 
+  const handleUpdate = async () => {
+    if (!editItemData) return;
+    const { id, collection } = editItemData;
+    const ref = doc(db, collection, id);
+    const data: any = {
+      name: editItemData.name,
+      value: editItemData.value,
+      tipo: editItemData.tipo,
+    };
+    if (collection === "gastosCreditoData") {
+      data.gastoDate = editItemData.gastoDate;
+    } else {
+      data.date = editItemData.date;
+    }
+
+    await updateDoc(ref, data);
+    setIsEditModalOpen(false);
+    // TODO: atualizar local state após edição
+  };
+
+  // ← Coloque o helper logo aqui, antes do return:
+  const formatForDateInput = (d: any) => {
+    if (!d) return "";
+    // se já for string no formato correto
+    if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+      return d;
+    }
+    // se for Timestamp do Firestore
+    if (d?.toDate) {
+      return d.toDate().toISOString().substr(0, 10);
+    }
+    // se for string como 'DD/MM/YYYY'
+    if (typeof d === "string" && d.includes("/")) {
+      const [day, month, year] = d.split("/").map(Number);
+      return new Date(year, month - 1, day).toISOString().substr(0, 10);
+    }
+    // se for Date puro
+    if (d instanceof Date) {
+      return d.toISOString().substr(0, 10);
+    }
+    return "";
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 text-gray-700">
@@ -214,106 +293,256 @@ export default function TransactionClient() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar onLogout={handleLogout} />
-
-      <main className="flex-1 p-8 text-gray-700">
-        <Presentation pageDescription="Sua carteira de ganhos e gastos." />
-        <h1 className="text-2xl font-bold mb-6">Transações</h1>
-
-        <div className="mb-6">
-          <label className="block text-sm font-medium mb-1">Ordenar por:</label>
-          <select
-            value={sortOption}
-            onChange={(e) => setSortOption(e.target.value)}
-            className="border rounded-lg p-2 text-sm border-purple-600"
-          >
-            <option value="mes-desc">Mais recente primeiro</option>
-            <option value="mes-asc">Mais antigo primeiro</option>
-            <option value="lancamento">Ordem de lançamento</option>
-          </select>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h3 className="text-xl font-medium mb-4">Ganhos</h3>
-            {Object.keys(ganhosOrdenados).length === 0 ? (
-              <p className="text-sm text-gray-500">Sem ganhos registrados.</p>
+    <>
+      {/* Modal de Edição */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 backdrop-blur-[2px] bg-opacity-40 flex items-center justify-center z-50 text-gray-600 p-8">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md flex flex-col gap-2">
+            <h2 className="text-xl">Editar Transação</h2>
+            <input
+              type="text"
+              value={editItemData.name}
+              onChange={(e) =>
+                setEditItemData({ ...editItemData, name: e.target.value })
+              }
+              className="w-full p-2 border rounded focus:outline-0 border-purple-700"
+            />
+            <input
+              type="number"
+              value={editItemData.value}
+              onChange={(e) =>
+                setEditItemData({
+                  ...editItemData,
+                  value: Number(e.target.value),
+                })
+              }
+              className="w-full p-2 border rounded focus:outline-0 border-purple-700"
+            />
+            {editItemData.collection === "gastosCreditoData" ? (
+              <input
+                type="date"
+                value={formatForDateInput(editItemData.gastoDate)}
+                onChange={(e) =>
+                  setEditItemData({
+                    ...editItemData,
+                    gastoDate: e.target.value,
+                  })
+                }
+                className="w-full p-2 border rounded focus:outline-0 border-purple-700 appearance-none
+    sm:appearance-none"
+              />
             ) : (
-              Object.entries(ganhosOrdenados).map(([mes, itens], idx) => (
-                <div key={idx} className="mb-6">
-                  <h4 className="text-lg font-semibold mb-2">{mes}</h4>
-                  {itens.map((ganho, index) => (
-                    <div
-                      key={index}
-                      className="mb-2 p-4 border border-gray-200 rounded-lg hover:shadow-lg transition-all"
-                    >
-                      <div className="flex justify-between">
-                        <span className="font-semibold">{ganho.name}</span>
-                        <span className="text-green-500">
-                          +R$ {ganho.value.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {ganho._parsedDateStr ||
-                          (typeof ganho.date === "string"
-                            ? ganho.date
-                            : ganho.date?.toDate().toLocaleDateString("pt-BR"))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))
+              <input
+                type="date"
+                value={formatForDateInput(editItemData.date)}
+                onChange={(e) =>
+                  setEditItemData({ ...editItemData, date: e.target.value })
+                }
+                className="w-full p-2 border rounded focus:outline-0 border-purple-700 appearance-none
+    sm:appearance-none"
+              />
             )}
-          </div>
 
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h3 className="text-xl font-medium mb-4">Gastos</h3>
-            {Object.keys(gastosOrdenados).length === 0 ? (
-              <p className="text-sm text-gray-500">Sem gastos registrados.</p>
-            ) : (
-              Object.entries(gastosOrdenados).map(([mes, itens], idx) => (
-                <div key={idx} className="mb-6">
-                  <h4 className="text-lg font-semibold mb-2">{mes}</h4>
-                  {itens.map((gasto, index) => (
-                    <div
-                      key={index}
-                      className="mb-2 p-4 border border-gray-200 rounded-lg hover:shadow-lg transition-all"
-                    >
-                      <div className="flex justify-between">
-                        <span className="font-semibold">{gasto.name}</span>
-                        <span className="text-red-500">
-                          -R$ {gasto.value.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <div className="text-sm text-gray-500">
-                          {gasto.gastoDate
-                            ? typeof gasto.gastoDate === "string"
-                              ? gasto.gastoDate
-                              : gasto.gastoDate
-                                  .toDate()
-                                  .toLocaleDateString("pt-BR")
-                            : typeof gasto.date === "string"
-                              ? gasto.date
-                              : gasto.date
-                                  ?.toDate()
-                                  .toLocaleDateString("pt-BR")}
-                        </div>
-                        <div className="text-xs text-gray-400 italic">
-                          {gasto.tipo === "crédito"
-                            ? "Gasto no crédito"
-                            : "Gasto no débito"}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))
-            )}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 rounded bg-gray-300 cursor-pointer hover:bg-gray-200 transition-all duration-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdate}
+                className="px-4 py-2 rounded bg-[#8B5CF6] text-white cursor-pointer hover:bg-purple-500 transition-all duration-200"
+              >
+                Salvar
+              </button>
+            </div>
           </div>
         </div>
-      </main>
-    </div>
+      )}
+
+      {/* UI Principal */}
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar onLogout={handleLogout} />
+
+        <main className="flex-1 p-8 text-gray-700">
+          <Presentation pageDescription="Sua carteira de ganhos e gastos." />
+          <h1 className="text-2xl font-bold mb-6">Transações</h1>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-1">
+              Ordenar por:
+            </label>
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="border rounded-lg p-2 text-sm border-purple-600"
+            >
+              <option value="mes-desc">Mais recente primeiro</option>
+              <option value="mes-asc">Mais antigo primeiro</option>
+              <option value="lancamento">Ordem de lançamento</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="bg-white rounded-2xl shadow p-6">
+              <h3 className="text-xl font-medium mb-4">Ganhos</h3>
+              {Object.keys(ganhosOrdenados).length === 0 ? (
+                <p className="text-sm text-gray-500">Sem ganhos registrados.</p>
+              ) : (
+                Object.entries(ganhosOrdenados).map(([mes, itens], idx) => (
+                  <div key={idx} className="mb-6">
+                    <h4 className="text-lg font-semibold mb-2">{mes}</h4>
+                    {itens.map((ganho, index) => (
+                      <div
+                        key={index}
+                        className={`relative mb-2 p-4 border border-gray-200 rounded-lg transition-all duration-300 hover:shadow-lg ${
+                          expandedCardId === `ganho-${mes}-${index}`
+                            ? "pr-4 md:pr-36"
+                            : ""
+                        }`}
+                        onClick={() =>
+                          setExpandedCardId(
+                            expandedCardId === `ganho-${mes}-${index}`
+                              ? null
+                              : `ganho-${mes}-${index}`
+                          )
+                        }
+                      >
+                        <div className="flex justify-between">
+                          <span className="font-semibold">{ganho.name}</span>
+                          <span className="text-green-500">
+                            +R$ {ganho.value.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-500">
+                          <div>
+                            {ganho.date
+                              ? typeof ganho.date === "string"
+                                ? ganho.date
+                                : ganho.date
+                                    .toDate()
+                                    .toLocaleDateString("pt-BR")
+                              : ""}
+                          </div>
+                          <div className="text-xs text-gray-400 italic">
+                            Ganho
+                          </div>
+                        </div>
+
+                        {expandedCardId === `ganho-${mes}-${index}` && (
+                          <div className="flex flex-row gap-2 mt-2 md:mt-0 md:absolute h-full md:top-2 md:right-2 pb-0 md:pb-4">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(ganho.id, ganho.collection);
+                              }}
+                              className="text-sm bg-red-100 text-red-500 px-2 py-2 rounded cursor-pointer h-full w-full md:w-auto"
+                            >
+                              Excluir
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditItemData(ganho);
+                                setIsEditModalOpen(true);
+                              }}
+                              className="text-sm bg-[#8B5CF6] text-white px-2 py-2 rounded cursor-pointer h-full w-full md:w-auto"
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl shadow p-6">
+              <h3 className="text-xl font-medium mb-4">Gastos</h3>
+              {Object.keys(gastosOrdenados).length === 0 ? (
+                <p className="text-sm text-gray-500">Sem gastos registrados.</p>
+              ) : (
+                Object.entries(gastosOrdenados).map(([mes, itens], idx) => (
+                  <div key={idx} className="mb-6">
+                    <h4 className="text-lg font-semibold mb-2">{mes}</h4>
+                    {itens.map((gasto, index) => (
+                      <div
+                        key={index}
+                        className={`relative mb-2 p-4 border border-gray-200 rounded-lg transition-all duration-300 hover:shadow-lg ${
+                          expandedCardId === `${mes}-${index}`
+                            ? "pr-4 md:pr-36"
+                            : ""
+                        }`}
+                        onClick={() =>
+                          setExpandedCardId(
+                            expandedCardId === `${mes}-${index}`
+                              ? null
+                              : `${mes}-${index}`
+                          )
+                        }
+                      >
+                        <div className="flex justify-between">
+                          <span className="font-semibold">{gasto.name}</span>
+                          <span className="text-red-500">
+                            -R$ {gasto.value.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-500">
+                          <div>
+                            {gasto.gastoDate
+                              ? typeof gasto.gastoDate === "string"
+                                ? gasto.gastoDate
+                                : gasto.gastoDate
+                                    .toDate()
+                                    .toLocaleDateString("pt-BR")
+                              : typeof gasto.date === "string"
+                                ? gasto.date
+                                : gasto.date
+                                    ?.toDate()
+                                    .toLocaleDateString("pt-BR")}
+                          </div>
+                          <div className="text-xs text-gray-400 italic">
+                            {gasto.tipo === "crédito"
+                              ? "Gasto no crédito"
+                              : "Gasto no débito"}
+                          </div>
+                        </div>
+
+                        {expandedCardId === `${mes}-${index}` && (
+                          <div className="flex flex-row gap-2 mt-2 md:mt-0 md:absolute h-full md:top-2 md:right-2 pb-0 md:pb-4">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(gasto.id, gasto.collection);
+                              }}
+                              className="text-sm bg-red-100 text-red-500 px-2 py-2 rounded cursor-pointer h-full w-full md:w-auto"
+                            >
+                              Excluir
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditItemData(gasto);
+                                setIsEditModalOpen(true);
+                              }}
+                              className="text-sm bg-[#8B5CF6] text-white px-2 py-2 rounded cursor-pointer h-full w-full md:w-auto"
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
+    </>
   );
 }

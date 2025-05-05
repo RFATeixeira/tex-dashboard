@@ -11,7 +11,7 @@ import {
   ArrowDownTrayIcon,
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
-import { MenuIcon, XIcon } from "lucide-react";
+import { MenuIcon, XIcon, Barcode } from "lucide-react";
 
 interface SidebarProps {
   onLogout: () => void;
@@ -22,11 +22,6 @@ export default function Sidebar({ onLogout }: SidebarProps) {
   const [isPageReady, setIsPageReady] = useState(false);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
-
-  // Função para simular que a página ficou pronta
-  const handlePageReady = () => {
-    setIsPageReady(true);
-  };
 
   return (
     <>
@@ -92,6 +87,14 @@ export default function Sidebar({ onLogout }: SidebarProps) {
               >
                 <ShoppingCartIcon className="h-5 w-5" />
                 Transações
+              </Link>
+
+              <Link
+                href="/ticket"
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-purple-100 hover:text-purple-600 transition-all"
+              >
+                <Barcode className="h-5 w-5" />
+                Boletos
               </Link>
 
               <Link

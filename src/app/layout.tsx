@@ -9,7 +9,7 @@ const poppins = Poppins({
   display: "swap",
 });
 export const viewport = {
-  themeColor: "#ffffff", // Agora dentro de viewport
+  themeColor: "#F9FAFB", // Agora dentro de viewport
 };
 
 export const metadata: Metadata = {
@@ -34,6 +34,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="theme-color" content="#F9FAFB" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body
         className={`${poppins.variable} antialiased bg-white text-gray-700`}
