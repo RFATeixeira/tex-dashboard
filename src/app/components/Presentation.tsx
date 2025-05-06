@@ -171,7 +171,7 @@ export default function Presentation({ pageDescription }: PresentationProps) {
           </h1>
           <p className="text-gray-500 text-sm sm:text-base">{description}</p>
         </div>
-        <div className="flex flex-row gap-6">
+        <div className="flex justify-end flex-row gap-6">
           <button
             onClick={async () => {
               setShowNotifications(true);
