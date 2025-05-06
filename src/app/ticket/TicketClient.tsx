@@ -151,7 +151,6 @@ export default function TicketPage() {
         if (isEditing && selectedTicket) {
           const ticketRef = doc(db, "tickets", selectedTicket.id);
           await updateDoc(ticketRef, ticketPayload);
-          setMessage("Boleto editado com sucesso!");
         } else {
           // Se não estiver editando, cria um novo boleto
           console.log("dueDate:", dueDate);
@@ -278,7 +277,7 @@ export default function TicketPage() {
               </div>
 
               <div className="flex flex-col items-center xl:items-end justify-center gap-2">
-                <p className="font-semibold">
+                <p className="font-semibold text-center lg:text-start">
                   Vencimento:{" "}
                   <span className="font-normal">
                     {getFormattedDate(ticket.dueDate)}

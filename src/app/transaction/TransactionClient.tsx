@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebaseConfig";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
@@ -17,8 +19,16 @@ import {
 import Sidebar from "../components/Sidebar";
 import Presentation from "../components/Presentation";
 import { motion, AnimatePresence } from "framer-motion";
+import MonthPicker from "../components/MonthPicker";
 
 export default function TransactionClient() {
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const year = today.getFullYear();
+    return `${year}-${month}`;
+  });
+
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -137,6 +147,24 @@ export default function TransactionClient() {
     return () => unsubscribeAuth();
   }, [router]);
 
+  const isMobileBreakpoint = 768; // md: 768px
+
+  function useIsMobile() {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+      const checkMobile = () =>
+        setIsMobile(window.innerWidth < isMobileBreakpoint);
+      checkMobile();
+      window.addEventListener("resize", checkMobile);
+      return () => window.removeEventListener("resize", checkMobile);
+    }, []);
+
+    return isMobile;
+  }
+
+  const isMobile = useIsMobile();
+
   const sortByDateOption = (
     data: any[],
     option: string
@@ -200,9 +228,21 @@ export default function TransactionClient() {
   };
 
   const ganhosOrdenados = useMemo(() => {
+    const filtered = ganhos.filter((item) => {
+      const date =
+        typeof item.date === "string"
+          ? new Date(item.date.split("-").reverse().join("-"))
+          : item.date?.toDate();
+      if (!date) return false;
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const [selYear, selMonth] = selectedMonth.split("-").map(Number);
+      return year === selYear && month === selMonth;
+    });
+
     if (sortOption === "lancamento") {
       return {
-        "Ordem de Lançamento": [...ganhos].sort((a, b) => {
+        "Ordem de Lançamento": filtered.sort((a, b) => {
           const dateA =
             typeof a.date === "string"
               ? new Date(a.date.split("-").reverse().join("-"))
@@ -215,13 +255,27 @@ export default function TransactionClient() {
         }),
       };
     }
-    return sortByDateOption(ganhos, sortOption);
-  }, [ganhos, sortOption]);
+
+    return sortByDateOption(filtered, sortOption);
+  }, [ganhos, sortOption, selectedMonth]);
 
   const gastosOrdenados = useMemo(() => {
+    const filtered = gastos.filter((item) => {
+      const rawDate = item.gastoDate || item.date;
+      const date =
+        typeof rawDate === "string"
+          ? new Date(rawDate.split("-").reverse().join("-"))
+          : rawDate?.toDate();
+      if (!date) return false;
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const [selYear, selMonth] = selectedMonth.split("-").map(Number);
+      return year === selYear && month === selMonth;
+    });
+
     if (sortOption === "lancamento") {
       return {
-        "Ordem de Lançamento": [...gastos].sort((a, b) => {
+        "Ordem de Lançamento": filtered.sort((a, b) => {
           const dateA =
             typeof a.date === "string"
               ? new Date(a.date.split("-").reverse().join("-"))
@@ -234,8 +288,9 @@ export default function TransactionClient() {
         }),
       };
     }
-    return sortByDateOption(gastos, sortOption);
-  }, [gastos, sortOption]);
+
+    return sortByDateOption(filtered, sortOption);
+  }, [gastos, sortOption, selectedMonth]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -369,20 +424,29 @@ export default function TransactionClient() {
         <main className="flex-1 p-8 text-gray-700">
           <Presentation pageDescription="Sua carteira de ganhos e gastos." />
           <h1 className="text-2xl font-bold mb-6">Transações</h1>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-1">
-              Ordenar por:
-            </label>
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="border rounded-lg p-2 text-sm border-purple-600"
-            >
-              <option value="mes-desc">Mais recente primeiro</option>
-              <option value="mes-asc">Mais antigo primeiro</option>
-              <option value="lancamento">Ordem de lançamento</option>
-            </select>
+          <div className="flex flex-row items-center justify-between mb-6">
+            <div className="">
+              <label className="block text-sm font-medium mb-1">
+                Ordenar por:
+              </label>
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="border rounded-lg p-2 text-sm border-purple-600"
+              >
+                <option value="mes-desc">Mais recente primeiro</option>
+                <option value="mes-asc">Mais antigo primeiro</option>
+              </select>
+            </div>
+            <div className="">
+              <label className="block text-sm font-medium">
+                Filtrar por Mês:
+              </label>
+              <MonthPicker
+                selectedMonth={selectedMonth}
+                onMonthChange={setSelectedMonth}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -397,7 +461,7 @@ export default function TransactionClient() {
                     {itens.map((ganho, index) => (
                       <div
                         key={index}
-                        className={`relative mb-2 p-4 border overflow-hidden border-gray-200 rounded-lg transition-all duration-300 hover:shadow-lg ${
+                        className={`relative mb-2 p-4 border overflow-hidden border-gray-200 rounded-lg transform transition-all duration-300 hover:shadow-lg ${
                           expandedCardId === `ganho-${mes}-${index}`
                             ? "pr-4 md:pr-36"
                             : ""
@@ -411,8 +475,10 @@ export default function TransactionClient() {
                         }
                       >
                         <div className="flex justify-between">
-                          <span className="font-semibold">{ganho.name}</span>
-                          <span className="text-green-500">
+                          <span className="font-semibold truncate">
+                            {ganho.name}
+                          </span>
+                          <span className="text-green-500 text-nowrap">
                             +R$ {ganho.value.toFixed(2)}
                           </span>
                         </div>
@@ -435,9 +501,21 @@ export default function TransactionClient() {
                           {expandedCardId === `ganho-${mes}-${index}` && (
                             <motion.div
                               key={`actions-${mes}-${index}`}
-                              initial={{ opacity: 0, x: 100 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 100 }}
+                              initial={
+                                isMobile
+                                  ? { opacity: 0, y: 20 }
+                                  : { opacity: 0, x: 100 }
+                              }
+                              animate={
+                                isMobile
+                                  ? { opacity: 1, y: 0 }
+                                  : { opacity: 1, x: 0 }
+                              }
+                              exit={
+                                isMobile
+                                  ? { opacity: 0, y: 20 }
+                                  : { opacity: 0, x: 100 }
+                              }
                               transition={{ duration: 0.2 }}
                               className="flex flex-row gap-2 mt-2 md:mt-0 md:absolute h-full items-center md:top-2 md:right-2 pb-0 md:pb-4"
                             >
@@ -481,7 +559,7 @@ export default function TransactionClient() {
                     {itens.map((gasto, index) => (
                       <div
                         key={index}
-                        className={`relative mb-2 p-4 border overflow-hidden border-gray-200 rounded-lg transition-all duration-300 hover:shadow-lg ${
+                        className={`relative mb-2 p-4 border overflow-hidden border-gray-200 rounded-lg transform transition-all duration-300 hover:shadow-lg ${
                           expandedCardId === `${mes}-${index}`
                             ? "pr-4 md:pr-36"
                             : ""
@@ -494,9 +572,11 @@ export default function TransactionClient() {
                           )
                         }
                       >
-                        <div className="flex justify-between">
-                          <span className="font-semibold">{gasto.name}</span>
-                          <span className="text-red-500">
+                        <div className="flex justify-between gap-2">
+                          <span className="font-semibold truncate">
+                            {gasto.name}
+                          </span>
+                          <span className="text-red-500 text-nowrap">
                             -R$ {gasto.value.toFixed(2)}
                           </span>
                         </div>
@@ -525,9 +605,21 @@ export default function TransactionClient() {
                           {expandedCardId === `${mes}-${index}` && (
                             <motion.div
                               key={`actions-${mes}-${index}`}
-                              initial={{ opacity: 0, x: 100 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 100 }}
+                              initial={
+                                isMobile
+                                  ? { opacity: 0, y: 20 }
+                                  : { opacity: 0, x: 100 }
+                              }
+                              animate={
+                                isMobile
+                                  ? { opacity: 1, y: 0 }
+                                  : { opacity: 1, x: 0 }
+                              }
+                              exit={
+                                isMobile
+                                  ? { opacity: 0, y: 20 }
+                                  : { opacity: 0, x: 100 }
+                              }
                               transition={{ duration: 0.2 }}
                               className="flex flex-row gap-2 mt-2 md:mt-0 md:absolute h-full items-center md:top-2 md:right-2 pb-0 md:pb-4"
                             >
