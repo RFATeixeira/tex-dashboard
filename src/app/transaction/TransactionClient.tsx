@@ -439,7 +439,7 @@ export default function TransactionClient() {
               </select>
             </div>
             <div className="">
-              <label className="block text-sm font-medium">
+              <label className="block text-sm font-medium mb-1">
                 Filtrar por Mês:
               </label>
               <MonthPicker
