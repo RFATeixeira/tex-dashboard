@@ -38,6 +38,7 @@ export default function SettingsPage() {
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
   const [creditoMaximo, setCreditoMaximo] = useState(1000);
+  const [diaVencimento, setDiaVencimento] = useState<number>(1);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
@@ -51,6 +52,7 @@ export default function SettingsPage() {
         if (userSettingsSnap.exists()) {
           const data = userSettingsSnap.data();
           if (data.creditoMaximo) setCreditoMaximo(data.creditoMaximo);
+          if (data.diaVencimento) setDiaVencimento(data.diaVencimento);
         }
       } else {
         router.replace("/login");
@@ -182,148 +184,191 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold mb-6">Ajustes</h1>
 
         {message && <p className="mb-4 text-green-500">{message}</p>}
-
-        {/* Atualização de imagem */}
-        <div className="mb-6">
-          <h2 className="text-lg font-medium mb-2">Imagem de Perfil</h2>
-          <div className="flex flex-col md:flex-row gap-4">
-            <input
-              type="text"
-              placeholder="Cole a URL da sua imagem de perfil"
-              value={profileImageUrl}
-              onChange={(e) => setProfileImageUrl(e.target.value)}
-              className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            <button
-              onClick={handleProfileImageUpdate}
-              className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
-            >
-              Atualizar Imagem
-            </button>
+        <div className="flex flex-row w-full justify-between gap-8">
+          {/* Atualização de imagem */}
+          <div className="mb-6 w-full">
+            <h2 className="text-lg font-medium mb-2">Imagem de Perfil</h2>
+            <div className="flex flex-col md:flex-row gap-4">
+              <input
+                type="text"
+                placeholder="Cole a URL da sua imagem de perfil"
+                value={profileImageUrl}
+                onChange={(e) => setProfileImageUrl(e.target.value)}
+                className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <button
+                onClick={handleProfileImageUpdate}
+                className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
+              >
+                Atualizar Imagem
+              </button>
+            </div>
+            {imageError && (
+              <p className="text-red-500 text-sm mt-2">{imageError}</p>
+            )}
           </div>
-          {imageError && (
-            <p className="text-red-500 text-sm mt-2">{imageError}</p>
-          )}
-        </div>
 
-        {/* Atualização de nome */}
-        <div className="mb-6">
-          <h2 className="text-lg font-medium mb-2">Nome</h2>
-          <div className="flex flex-col md:flex-row gap-4">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            <button
-              onClick={handleNameChange}
-              className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
-            >
-              Atualizar Nome
-            </button>
+          {/* Atualização de nome */}
+          <div className="mb-6 w-full">
+            <h2 className="text-lg font-medium mb-2">Nome</h2>
+            <div className="flex flex-col md:flex-row gap-4">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <button
+                onClick={handleNameChange}
+                className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
+              >
+                Atualizar Nome
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Se o usuário estiver logado com Google, não permite alterar e-mail nem senha */}
         {user?.email && isGoogleUser ? (
-          <div>
-            <div className="mb-6">
-              <h2 className="text-lg font-medium mb-2">E-mail</h2>
-              <div className="flex flex-col md:flex-row gap-4">
-                <input
-                  type="email"
-                  disabled
-                  value={email}
-                  className="h-14 border bg-gray-200 border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button className="h-14 md:w-80 sm:w-full bg-[#ae8bff] transition-all duration-200 text-white rounded-lg px-6">
-                  Provedor Google
-                </button>
+          <div className="flex flex-row w-full justify-between gap-8">
+            <div>
+              <div className="mb-6 w-full">
+                <h2 className="text-lg font-medium mb-2">E-mail</h2>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <input
+                    type="email"
+                    disabled
+                    value={email}
+                    className="h-14 border bg-gray-200 border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <button className="h-14 md:w-80 sm:w-full bg-[#ae8bff] transition-all duration-200 text-white rounded-lg px-6">
+                    Provedor Google
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="mb-6">
-              <h2 className="text-lg font-medium mb-2">Senha</h2>
-              <div className="flex flex-col md:flex-row gap-4">
-                <input
-                  type="password"
-                  disabled
-                  value="******"
-                  className="h-14 border bg-gray-200 border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button className="h-14 md:w-80 sm:w-full bg-[#ae8bff] transition-all duration-200 text-white rounded-lg px-6">
-                  Provedor Google
-                </button>
+              <div className="mb-6">
+                <h2 className="text-lg font-medium mb-2">Senha</h2>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <input
+                    type="password"
+                    disabled
+                    value="******"
+                    className="h-14 border bg-gray-200 border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <button className="h-14 md:w-80 sm:w-full bg-[#ae8bff] transition-all duration-200 text-white rounded-lg px-6">
+                    Provedor Google
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         ) : (
           <>
-            {/* Atualização de e-mail */}
-            <div className="mb-6">
-              <h2 className="text-lg font-medium mb-2">E-mail</h2>
-              <div className="flex flex-col md:flex-row gap-4">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button
-                  onClick={handleEmailChange}
-                  className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
-                >
-                  Atualizar E-mail
-                </button>
+            <div className="flex flex-row w-full justify-between gap-8">
+              {/* Atualização de e-mail */}
+              <div className="mb-6 w-full">
+                <h2 className="text-lg font-medium mb-2">E-mail</h2>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <button
+                    onClick={handleEmailChange}
+                    className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
+                  >
+                    Atualizar E-mail
+                  </button>
+                </div>
+              </div>
+
+              {/* Atualização de senha */}
+              <div className="mb-6 w-full">
+                <h2 className="text-lg font-medium mb-2">Senha</h2>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <button
+                    onClick={handlePasswordChange}
+                    className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
+                  >
+                    Atualizar Senha
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Atualização de senha */}
-            <div className="mb-6">
-              <h2 className="text-lg font-medium mb-2">Senha</h2>
-              <div className="flex flex-col md:flex-row gap-4">
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button
-                  onClick={handlePasswordChange}
-                  className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
-                >
-                  Atualizar Senha
-                </button>
+            <div className="flex flex-row w-full justify-between gap-8">
+              {/* Definir Crédito */}
+              <div className="mb-6 w-full">
+                <h2 className="text-lg font-medium mb-2">Limite de Crédito</h2>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <input
+                    type="number"
+                    value={creditoMaximo.toFixed(2)}
+                    onChange={(e) => setCreditoMaximo(Number(e.target.value))}
+                    className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!user) return;
+                      const db = getFirestore();
+                      await setDoc(
+                        doc(db, "users", user.uid),
+                        {
+                          userId: user.uid,
+                          creditoMaximo,
+                        },
+                        { merge: true }
+                      );
+                    }}
+                    className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
+                  >
+                    Atualizar Limite
+                  </button>
+                </div>
               </div>
-            </div>
-
-            {/* Definir Crédito */}
-            <div className="mb-6">
-              <h2 className="text-lg font-medium mb-2">Limite de Crédito</h2>
-              <div className="flex flex-col md:flex-row gap-4">
-                <input
-                  type="number"
-                  value={creditoMaximo.toFixed(2)}
-                  onChange={(e) => setCreditoMaximo(Number(e.target.value))}
-                  className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button
-                  onClick={async () => {
-                    if (!user) return;
-                    const db = getFirestore();
-                    await setDoc(
-                      doc(db, "users", user.uid),
-                      {
-                        userId: user.uid,
-                        creditoMaximo,
-                      },
-                      { merge: true }
-                    );
-                  }}
-                  className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
-                >
-                  Atualizar Limite
-                </button>
+              {/* Definir Dia de Vencimento */}
+              <div className="mb-6 w-full">
+                <h2 className="text-lg font-medium mb-2">Dia do Vencimento</h2>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={diaVencimento}
+                    onChange={(e) =>
+                      setDiaVencimento(
+                        Math.max(1, Math.min(31, Number(e.target.value)))
+                      )
+                    }
+                    className="h-14 border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!user) return;
+                      const db = getFirestore();
+                      await setDoc(
+                        doc(db, "users", user.uid),
+                        {
+                          userId: user.uid,
+                          diaVencimento,
+                        },
+                        { merge: true }
+                      );
+                      setMessage("Dia de vencimento atualizado com sucesso!");
+                    }}
+                    className="h-14 md:w-80 sm:w-full bg-[#8B5CF6] hover:bg-[#6e3fdb] transition-all duration-200 cursor-pointer text-white rounded-lg px-6"
+                  >
+                    Atualizar Vencimento
+                  </button>
+                </div>
               </div>
             </div>
           </>

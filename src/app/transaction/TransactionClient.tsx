@@ -63,13 +63,28 @@ export default function TransactionClient() {
           collection(db, "gastosCreditoData"),
           where("userId", "==", u.uid)
         );
+        const ganhosValeAlimQuery = query(
+          collection(db, "ganhosValeAlimData"),
+          where("userId", "==", u.uid)
+        );
+        const gastosValeAlimQuery = query(
+          collection(db, "gastosValeAlimData"),
+          where("userId", "==", u.uid)
+        );
 
-        const [ganhosSnapshot, gastosSnapshot, gastosCreditoSnapshot] =
-          await Promise.all([
-            getDocs(ganhosQuery),
-            getDocs(gastosQuery),
-            getDocs(gastosCreditoQuery),
-          ]);
+        const [
+          ganhosSnapshot,
+          gastosSnapshot,
+          gastosCreditoSnapshot,
+          ganhosValeAlimSnapshot,
+          gastosValeAlimSnapshot,
+        ] = await Promise.all([
+          getDocs(ganhosQuery),
+          getDocs(gastosQuery),
+          getDocs(gastosCreditoQuery),
+          getDocs(ganhosValeAlimQuery),
+          getDocs(gastosValeAlimQuery),
+        ]);
 
         const ganhosData = ganhosSnapshot.docs.map((doc) => {
           const data = doc.data() as any;
@@ -101,7 +116,33 @@ export default function TransactionClient() {
           };
         });
 
+        const ganhosValeAlimData = ganhosValeAlimSnapshot.docs.map((doc) => {
+          const data = doc.data() as any;
+          return {
+            id: doc.id,
+            ...data,
+            tipo: "débito",
+            collection: "ganhosValeAlimData",
+            description: "Ganho no ValeAlim",
+          };
+        });
+
+        const gastosValeAlimData = gastosValeAlimSnapshot.docs.map((doc) => {
+          const data = doc.data() as any;
+          return {
+            id: doc.id,
+            ...data,
+            tipo: "débito",
+            collection: "gastosValeAlimData",
+            description: "Gasto no ValeAlim",
+          };
+        });
+
         const allGastosData = [...gastosData, ...gastosCreditoData];
+        const allGanhosData = [...ganhosData, ...ganhosValeAlimData];
+
+        setGanhos(allGanhosData);
+        setGastos([...allGastosData, ...gastosValeAlimData]);
 
         const currentDate = new Date();
         const currentMonth = currentDate.getMonth();
@@ -136,9 +177,6 @@ export default function TransactionClient() {
         setSaldo(totalGanhos - totalGastos);
         setTotalGanhos(totalGanhos);
         setTotalGastos(totalGastos);
-
-        setGanhos(ganhosData);
-        setGastos(allGastosData);
       } else {
         router.replace("/login");
       }
@@ -223,7 +261,6 @@ export default function TransactionClient() {
         return;
       }
       await deleteDoc(doc(db, collectionName, id));
-      alert("Transação deletada com sucesso");
     } catch (error) {
       console.error("Erro ao deletar transação:", error);
     }
@@ -566,7 +603,10 @@ export default function TransactionClient() {
                       >
                         <div className="flex justify-between gap-2">
                           <span className="font-semibold truncate">
-                            {gasto.name}
+                            {gasto.name}{" "}
+                            {gasto.parcelNumber && gasto.parcelas
+                              ? ` (${gasto.parcelNumber}/${gasto.parcelas})`
+                              : ""}
                           </span>
                           <span className="text-red-500 text-nowrap">
                             -R$ {gasto.value.toFixed(2)}

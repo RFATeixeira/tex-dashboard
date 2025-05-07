@@ -117,14 +117,29 @@ export default function DashboardPage() {
           collection(db, "gastosCreditoData"),
           where("userId", "==", u.uid)
         );
+        const ganhosValeAlimQuery = query(
+          collection(db, "ganhosValeAlimData"),
+          where("userId", "==", u.uid)
+        );
+        const gastosValeAlimQuery = query(
+          collection(db, "gastosValeAlimData"),
+          where("userId", "==", u.uid)
+        );
 
         try {
-          const [ganhosSnapshot, gastosSnapshot, gastosCreditoSnapshot] =
-            await Promise.all([
-              getDocs(ganhosQuery),
-              getDocs(gastosQuery),
-              getDocs(gastosCreditoQuery),
-            ]);
+          const [
+            ganhosSnapshot,
+            gastosSnapshot,
+            gastosCreditoSnapshot,
+            ganhosValeAlimSnapshot,
+            gastosValeAlimSnapshot,
+          ] = await Promise.all([
+            getDocs(ganhosQuery),
+            getDocs(gastosQuery),
+            getDocs(gastosCreditoQuery),
+            getDocs(ganhosValeAlimQuery),
+            getDocs(gastosValeAlimQuery),
+          ]);
 
           // Extrair todos os anos únicos dos dados
           const yearsSet = new Set<number>();
@@ -150,6 +165,8 @@ export default function DashboardPage() {
           extractYears(ganhosSnapshot);
           extractYears(gastosSnapshot);
           extractYears(gastosCreditoSnapshot);
+          extractYears(ganhosValeAlimSnapshot);
+          extractYears(gastosValeAlimSnapshot);
 
           // Converter o Set para um array e ordenar
           const uniqueYears = Array.from(yearsSet).sort();
@@ -219,6 +236,8 @@ export default function DashboardPage() {
           processData(ganhosSnapshot, "ganhos");
           processData(gastosSnapshot, "gastos");
           processData(gastosCreditoSnapshot, "gastos");
+          processData(ganhosValeAlimSnapshot, "ganhos");
+          processData(gastosValeAlimSnapshot, "gastos");
 
           // Formatar os dados para o gráfico
           const chartData = MONTH_NAMES.map((month) => ({
@@ -273,6 +292,28 @@ export default function DashboardPage() {
                 isParcel: data.isParcel || false,
                 parcelNumber: data.parcelNumber,
                 totalParcelas: data.totalParcelas,
+              };
+            }),
+            ...ganhosValeAlimSnapshot.docs.map((doc) => {
+              const data = doc.data();
+              return {
+                type: "ganho" as const,
+                name: data.name,
+                value: data.value,
+                date: data.date,
+                createdAt: data.createdAt,
+                isParcel: data.isParcel || false,
+              };
+            }),
+            ...gastosValeAlimSnapshot.docs.map((doc) => {
+              const data = doc.data();
+              return {
+                type: "gasto" as const,
+                name: data.name,
+                value: data.value,
+                date: data.date,
+                createdAt: data.createdAt,
+                isParcel: data.isParcel || false,
               };
             }),
           ];

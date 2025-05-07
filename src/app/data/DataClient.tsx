@@ -106,17 +106,11 @@ export default function DashboardPage() {
         const gastoDate = new Date(date); // data original do gasto
         const createdAtTimestamp = Timestamp.now();
 
-        // Define a data da primeira parcela
+        // Define a data da primeira parcela para o mês seguinte, dia 1
         let parcelStartDate = new Date(gastoDate);
-        const dia = parcelStartDate.getDate();
+        parcelStartDate.setMonth(parcelStartDate.getMonth() + 1);
+        parcelStartDate.setDate(1);
 
-        if (dia >= 8) {
-          // Avança para o dia 1 do próximo mês
-          parcelStartDate.setMonth(parcelStartDate.getMonth() + 1);
-          parcelStartDate.setDate(1);
-        }
-
-        // Criação das parcelas
         for (let i = 0; i < parcelas; i++) {
           const parcelDate = new Date(parcelStartDate);
           parcelDate.setMonth(parcelStartDate.getMonth() + i);
@@ -124,12 +118,12 @@ export default function DashboardPage() {
           await addDoc(dataCollection, {
             name,
             value: Number(value) / parcelas,
-            date: Timestamp.fromDate(parcelDate), // data da parcela
+            date: Timestamp.fromDate(parcelDate),
             userId: user.uid,
             parcelas,
             tipo: "gastoCredito",
             createdAt: createdAtTimestamp,
-            gastoDate: Timestamp.fromDate(gastoDate), // <-- data real do gasto
+            gastoDate: Timestamp.fromDate(gastoDate),
             isParcel: true,
             parcelNumber: i + 1,
             totalParcelas: parcelas,

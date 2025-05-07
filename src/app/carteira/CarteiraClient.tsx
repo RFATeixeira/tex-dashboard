@@ -55,8 +55,10 @@ export default function WalletPage() {
 
   const creditoUsado = useMemo(() => {
     const now = new Date();
+    const currentDay = now.getUTCDate();
     const currentMonth = now.getUTCMonth();
     const currentYear = now.getUTCFullYear();
+    const vencimentoDia = 7;
 
     // Calcular o mês seguinte
     let nextMonth = currentMonth + 1;
@@ -71,9 +73,8 @@ export default function WalletPage() {
       { itemBase: (typeof gastosCredito)[0]; datas: Date[] }
     >();
 
-    // Agrupa parcelas por groupId
     gastosCredito.forEach((item) => {
-      const date = item.date?.toDate?.(); // <- Alterado aqui
+      const date = item.date?.toDate?.();
       if (!date) return;
 
       const group = grupos.get(item.parcelGroupId);
@@ -90,28 +91,33 @@ export default function WalletPage() {
     let total = 0;
 
     grupos.forEach(({ itemBase, datas }) => {
-      const hasParcelaNoMesAtual = datas.some(
-        (d) =>
-          d.getUTCFullYear() === currentYear && d.getUTCMonth() === currentMonth
-      );
+      const parcelasValidas = datas.filter((d) => {
+        const year = d.getUTCFullYear();
+        const month = d.getUTCMonth();
+        const day = d.getUTCDate();
 
-      const hasParcelaNoMesSeguinte = datas.some(
-        (d) => d.getUTCFullYear() === nextYear && d.getUTCMonth() === nextMonth
-      );
-
-      // Só considerar o grupo se há parcela no mês atual ou no mês seguinte
-      if (hasParcelaNoMesAtual || hasParcelaNoMesSeguinte) {
-        const parcelasFuturasOuAtual = datas.filter(
-          (d) =>
-            d.getUTCFullYear() > currentYear ||
-            (d.getUTCFullYear() === currentYear &&
-              d.getUTCMonth() >= currentMonth)
-        );
-
-        const valor = Number(itemBase.value);
-        if (!isNaN(valor)) {
-          total += valor * parcelasFuturasOuAtual.length;
+        if (
+          year > currentYear ||
+          (year === currentYear && month > currentMonth)
+        ) {
+          return true; // meses futuros
         }
+
+        // Se for o mês atual, só conta se ainda não passou do vencimento
+        if (
+          year === currentYear &&
+          month === currentMonth &&
+          currentDay < vencimentoDia
+        ) {
+          return true;
+        }
+
+        return false;
+      });
+
+      const valor = Number(itemBase.value);
+      if (!isNaN(valor)) {
+        total += valor * parcelasValidas.length;
       }
     });
 
