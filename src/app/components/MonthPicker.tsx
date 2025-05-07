@@ -16,7 +16,11 @@ const MonthPicker: React.FC<MonthPickerProps> = ({
   };
 
   return (
-    <select value={selectedMonth} onChange={handleChange}>
+    <select
+      value={selectedMonth}
+      onChange={handleChange}
+      className="text-right"
+    >
       <option value="2025-01">Janeiro-25</option>
       <option value="2025-02">Fevereiro-25</option>
       <option value="2025-03">Março-25</option>

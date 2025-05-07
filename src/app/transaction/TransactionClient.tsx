@@ -29,7 +29,7 @@ export default function TransactionClient() {
     return `${year}-${month}`;
   });
 
-  const [useMonthFilter, setUseMonthFilter] = useState(true);
+  const [useMonthFilter, setUseMonthFilter] = useState(false);
 
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -394,40 +394,50 @@ export default function TransactionClient() {
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar onLogout={handleLogout} />
 
-        <main className="flex-1 p-8 text-gray-700">
+        <main className="flex-1 px-6 lg:px-8 py-4 text-gray-700">
           <Presentation pageDescription="Sua carteira de ganhos e gastos." />
           <h1 className="text-2xl font-bold mb-6">Transações</h1>
-          <div className="flex flex-row items-center justify-between mb-6">
-            <div className="">
+          <div className="flex flex-col lg:flex-row items-start gap-2 lg:items-center lg:justify-between mb-6">
+            <div>
               <label className="block text-sm font-medium mb-1">
                 Ordenar por:
               </label>
               <select
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value)}
-                className="border rounded-lg p-2 text-sm border-purple-600"
+                className="border rounded-lg px-2 h-10 text-sm border-purple-600"
               >
                 <option value="mes-desc">Mais recente primeiro</option>
                 <option value="mes-asc">Mais antigo primeiro</option>
               </select>
             </div>
-            <div className="border rounded-lg p-2 text-sm border-purple-600 flex lfex-row gap-4">
-              <label className="flex items-center gap-2 text-gray-700 h-6">
-                <input
-                  type="checkbox"
-                  checked={useMonthFilter}
-                  onChange={() => setUseMonthFilter((prev) => !prev)}
-                  className="accent-purple-600"
-                />
-                Filtrar por mês
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Filtrar por mês:
               </label>
+              <div className="flex flex-row border rounded-lg px-2 text-sm border-purple-600 h-10 items-center justify-between">
+                <div
+                  className="relative inline-flex items-center cursor-pointer"
+                  onClick={() => setUseMonthFilter((prev) => !prev)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={useMonthFilter}
+                    onChange={() => {}}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-300 peer-checked:bg-purple-600 rounded-full peer transition-colors duration-300 ease-in-out"></div>
+                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ease-in-out peer-checked:translate-x-5"></div>
+                  <span className="text-gray-700 ml-2 mr-2">Filtrar</span>
+                </div>
 
-              {useMonthFilter && (
-                <MonthPicker
-                  selectedMonth={selectedMonth}
-                  onChange={setSelectedMonth}
-                />
-              )}
+                {useMonthFilter && (
+                  <MonthPicker
+                    selectedMonth={selectedMonth}
+                    onChange={setSelectedMonth}
+                  />
+                )}
+              </div>
             </div>
           </div>
 

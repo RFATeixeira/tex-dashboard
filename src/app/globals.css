@@ -54,3 +54,35 @@ input:-ms-input-placeholder {
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
+
+input[type="date"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 8px;
+  font-size: 16px;
+  width: 100%;
+  border: 1px solid #9810fa;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  background-size: contain;
+  width: 20px;
+  height: 20px;
+}
+
+select {
+  -webkit-appearance: none; /* Remove a aparência padrão no Safari */
+  -moz-appearance: none; /* Remove a aparência padrão no Firefox */
+  appearance: none; /* Remove a aparência padrão no Chrome/Edge */
+  border: 1px solid #ccc;
+  padding: 8px;
+  font-size: 16px;
+  width: 100%;
+}
+
+/* Ajustando o estilo quando o select estiver em foco */
+select:focus {
+  border-color: #4a90e2;
+  outline: none;
+}

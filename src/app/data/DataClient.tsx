@@ -165,7 +165,7 @@ export default function DashboardPage() {
   };
 
   const renderForm = () => (
-    <div className="bg-white shadow-md rounded-2xl p-6 w-full sm:w-[90%] md:w-[80%] lg:w-[100%] xl:w-[100%] mb-8">
+    <div className="bg-white shadow-md rounded-2xl p-6 w-full md:max-w-[60%] lg:max-w-[60%] xl:max-w-[50%] mb-8">
       <h2 className="text-xl font-semibold mb-4 text-center">
         {entries.type === "ganhos" && "Adicionar Ganho"}
         {entries.type === "gastos" && "Adicionar Gasto"}
@@ -179,7 +179,7 @@ export default function DashboardPage() {
       <label className="block mb-2 text-gray-700">Nome</label>
       <input
         type="text"
-        className="w-full border border-gray-300 rounded p-2 mb-4 outline-none focus:border-purple-600"
+        className="w-full border border-gray-300 rounded-xl p-2 mb-4 outline-none focus:border-purple-600"
         value={entries.name}
         onChange={(e) => handleChange("name", e.target.value)}
       />
@@ -187,7 +187,7 @@ export default function DashboardPage() {
       <label className="block mb-2 text-gray-700">Valor (R$)</label>
       <input
         type="number"
-        className="w-full border border-gray-300 rounded p-2 mb-4 outline-none focus:border-purple-600"
+        className="w-full border border-gray-300 rounded-xl p-2 mb-4 outline-none focus:border-purple-600"
         value={entries.value}
         onChange={(e) => handleChange("value", e.target.value)}
       />
@@ -195,7 +195,7 @@ export default function DashboardPage() {
       <label className="block mb-2 text-gray-700">Data</label>
       <input
         type="date"
-        className="w-full border border-gray-300 rounded p-2 mb-4 outline-none focus:border-purple-600"
+        className="w-full border border-gray-300 rounded-xl p-2 mb-4 outline-none focus:border-purple-600"
         value={entries.date}
         onChange={(e) => handleChange("date", e.target.value)}
       />
@@ -204,7 +204,7 @@ export default function DashboardPage() {
       <select
         value={entries.type}
         onChange={(e) => handleChange("type", e.target.value as EntryType)}
-        className="w-full border border-gray-300 rounded p-2 mb-4 outline-none focus:border-purple-600"
+        className="w-full border border-gray-300 rounded-xl p-2 mb-4 outline-none focus:border-purple-600"
       >
         <option value="ganhos">Ganho</option>
         <option value="gastos">Gasto</option>
@@ -251,7 +251,7 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <Sidebar onLogout={handleLogout} />
 
-      <main className="flex-1 p-8 text-gray-700">
+      <main className="flex-1 px-6 lg:px-8 py-4 text-gray-700">
         <Presentation pageDescription="Registre seus ganhos e gastos." />
         <h1 className="text-2xl font-bold mb-6">Inserir Dados</h1>
 

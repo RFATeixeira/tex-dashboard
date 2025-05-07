@@ -90,18 +90,33 @@ export default function TicketPage() {
             ? dayjs(data.dueDate.toDate())
             : dayjs(new Date(data.dueDate.seconds * 1000));
 
-        // Se passaram mais de 5 dias após o vencimento, marcar para exclusão
         if (now.diff(dueDate, "day") > 5) {
           expiredTickets.push(doc.id);
-          return null; // Não incluir na lista
+          return null;
         }
 
         return {
           id: doc.id,
           ...data,
+          dueDate,
+          dateColor:
+            dueDate.diff(now, "day") <= 3
+              ? "text-red-500"
+              : dueDate.diff(now, "day") <= 5
+                ? "text-yellow-500"
+                : "text-green-500",
         };
       })
-      .filter(Boolean); // Remove os boletos nulos (que serão deletados)
+      .filter(
+        (
+          ticket
+        ): ticket is {
+          id: string;
+          dueDate: dayjs.Dayjs;
+          dateColor: string;
+        } => ticket !== null
+      )
+      .sort((a, b) => a.dueDate.valueOf() - b.dueDate.valueOf());
 
     // Deleta os boletos vencidos há mais de 5 dias
     for (const id of expiredTickets) {
@@ -234,10 +249,28 @@ export default function TicketPage() {
     );
   }
 
+  const getDateColor = (dueDate: any) => {
+    const now = dayjs().startOf("day");
+
+    const ticketDate = dayjs.isDayjs(dueDate)
+      ? dueDate.startOf("day")
+      : dayjs(
+          dueDate instanceof Timestamp
+            ? dueDate.toDate()
+            : new Date(dueDate.seconds * 1000)
+        ).startOf("day");
+
+    const diff = ticketDate.diff(now, "day");
+
+    if (diff > 5) return "text-green-600";
+    if (diff >= 3) return "text-orange-500";
+    return "text-red-500";
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar onLogout={() => {}} />
-      <main className="flex-1 p-6 md:p-8 text-gray-700">
+      <main className="flex-1 px-6 lg:px-8 py-4 text-gray-700">
         <Presentation pageDescription="Gerencie seus Boletos!" />
 
         <h1 className="text-2xl font-bold mb-6">Boletos</h1>
@@ -279,8 +312,10 @@ export default function TicketPage() {
               <div className="flex flex-col items-center xl:items-end justify-center gap-2">
                 <p className="font-semibold text-center lg:text-start">
                   Vencimento:{" "}
-                  <span className="font-normal">
-                    {getFormattedDate(ticket.dueDate)}
+                  <span
+                    className={`font-normal ${getDateColor(ticket.dueDate)}`}
+                  >
+                    {ticket.dueDate.format("DD/MM/YYYY")}
                   </span>
                 </p>
                 <div className="flex flex-col xl:flex-row gap-2 items-center">

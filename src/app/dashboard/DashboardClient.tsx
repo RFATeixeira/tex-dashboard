@@ -21,10 +21,16 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  LabelList,
 } from "recharts";
 import Sidebar from "../components/Sidebar";
 import Presentation from "../components/Presentation";
 import Link from "next/link";
+import { FaChartBar, FaChartPie } from "react-icons/fa";
 
 type TransactionBase = {
   name: string;
@@ -67,6 +73,31 @@ export default function DashboardPage() {
   const [selectedYear, setSelectedYear] = useState<number>(
     new Date().getFullYear()
   );
+  const totalGanhos = dashboardData.reduce((sum, item) => sum + item.ganhos, 0);
+  const totalGastos = dashboardData.reduce((sum, item) => sum + item.gastos, 0);
+  const pieData = [
+    { name: "Ganhos", value: totalGanhos },
+    { name: "Gastos", value: totalGastos },
+  ];
+  const [chartType, setChartType] = useState<"bar" | "pie">("bar");
+  const pieColors = ["#8b5cf6", "#d4c1ff"];
+  const [isMobile, setIsMobile] = useState(false);
+  const [userChangedChart, setUserChangedChart] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      const isNowMobile = window.innerWidth < 768;
+      setIsMobile(isNowMobile);
+
+      if (isNowMobile && !userChangedChart) {
+        setChartType("pie");
+      }
+    };
+
+    checkIsMobile();
+    window.addEventListener("resize", checkIsMobile);
+    return () => window.removeEventListener("resize", checkIsMobile);
+  }, [userChangedChart]);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
@@ -383,7 +414,7 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar onLogout={handleLogout} />
-      <main className="flex-1 py-4 px-8 lg:px-8 lg:py-8 text-gray-700">
+      <main className="flex-1 px-6 lg:px-8 py-4 lg:py-8 text-gray-700">
         <Presentation pageDescription="Seu sistema de finance dashboard mais completo." />
         <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
@@ -413,42 +444,91 @@ export default function DashboardPage() {
         <div className="flex gap-6 justify-between flex-col md:flex-row">
           {/* Seção do gráfico */}
           <div className="bg-white rounded-2xl shadow p-6 w-full overflow-x-auto flex flex-col hover:shadow-2xl transition-all duration-200">
-            <h2 className="text-lg font-medium mb-4">
-              Gráfico de Gastos e Ganhos
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium">
+                Gráfico de Gastos e Ganhos
+              </h2>
+              <button
+                onClick={() => {
+                  setChartType((prev) => (prev === "bar" ? "pie" : "bar"));
+                  setUserChangedChart(true);
+                }}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
+                title="Alternar tipo de gráfico"
+              >
+                {chartType === "bar" ? (
+                  <FaChartPie size={20} />
+                ) : (
+                  <FaChartBar size={20} />
+                )}
+              </button>
+            </div>
             {availableYears.length > 0 ? (
               <div className="w-full h-64 md:h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={dashboardData}
-                    barCategoryGap={10}
-                    barGap={4}
-                    onMouseMove={(state) => {
-                      if (state?.activeTooltipIndex !== undefined) {
-                        setActiveIndex(state.activeTooltipIndex);
-                      }
-                    }}
-                    onMouseLeave={() => setActiveIndex(null)}
-                  >
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                    <YAxis axisLine={false} tickLine={false} />
-                    <Tooltip />
-                    <Bar
-                      dataKey="ganhos"
-                      name="Ganhos"
-                      fill="#8b5cf6"
-                      radius={[8, 8, 8, 8]}
-                      barSize={20}
-                    />
-                    <Bar
-                      dataKey="gastos"
-                      name="Gastos"
-                      fill="#d4c1ff"
-                      radius={[8, 8, 8, 8]}
-                      barSize={20}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+                {chartType === "pie" ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        label={({ name, percent, value }) =>
+                          `${name}: R$ ${value.toFixed(2)} (${(percent * 100).toFixed(1)}%)`
+                        }
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={pieColors[index % pieColors.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={dashboardData}
+                      barCategoryGap={10}
+                      barGap={4}
+                      onMouseMove={(state) => {
+                        if (state?.activeTooltipIndex !== undefined) {
+                          setActiveIndex(state.activeTooltipIndex);
+                        }
+                      }}
+                      onMouseLeave={() => setActiveIndex(null)}
+                    >
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                      <YAxis axisLine={false} tickLine={false} />
+                      <Tooltip
+                        formatter={(value: number) => value.toFixed(2)}
+                      />
+                      <Bar
+                        dataKey="ganhos"
+                        name="Ganhos"
+                        fill="#8b5cf6"
+                        radius={[8, 8, 8, 8]}
+                        barSize={20}
+                      />
+                      <LabelList
+                        dataKey="valor"
+                        position="top"
+                        formatter={(value: number) => value.toFixed(2)}
+                      />
+                      <Bar
+                        dataKey="gastos"
+                        name="Gastos"
+                        fill="#d4c1ff"
+                        radius={[8, 8, 8, 8]}
+                        barSize={20}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-64 md:h-80 text-gray-500">
@@ -482,7 +562,7 @@ export default function DashboardPage() {
                       {formatTransactionDate(transaction)}
                     </div>
                   </div>
-                  <span className="text-[#9E6EFE] font-semibold text-right">
+                  <span className="text-[#9E6EFE] font-semibold text-right text-nowrap">
                     {transaction.type === "ganho"
                       ? `+R$ ${(
                           transaction.originalValue || transaction.value

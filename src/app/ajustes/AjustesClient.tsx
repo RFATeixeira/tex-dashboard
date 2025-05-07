@@ -177,7 +177,7 @@ export default function SettingsPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar onLogout={handleLogout} />
-      <main className="flex-1 p-6 md:p-8 text-gray-700">
+      <main className="flex-1 px-6 lg:px-8 py-4 text-gray-700">
         <Presentation pageDescription="Altere os dados caso necessário." />
         <h1 className="text-2xl font-bold mb-6">Ajustes</h1>
 
