@@ -334,7 +334,7 @@ export default function TransactionClient() {
               onChange={(e) =>
                 setEditItemData({ ...editItemData, name: e.target.value })
               }
-              className="w-full p-2 border rounded focus:outline-0 border-purple-700"
+              className="w-full p-2 border rounded-xl focus:outline-0 border-purple-700"
             />
             <input
               type="number"
@@ -345,7 +345,7 @@ export default function TransactionClient() {
                   value: Number(e.target.value),
                 })
               }
-              className="w-full p-2 border rounded focus:outline-0 border-purple-700"
+              className="w-full p-2 border rounded-xl focus:outline-0 border-purple-700"
             />
             {editItemData.collection === "gastosCreditoData" ? (
               <input
@@ -381,7 +381,7 @@ export default function TransactionClient() {
               </button>
               <button
                 onClick={handleUpdate}
-                className="px-4 py-2 rounded bg-[#8B5CF6] text-white cursor-pointer hover:bg-purple-500 transition-all duration-200"
+                className="px-4 py-2 rounded bg-[#8B5CF6] text-white cursor-pointer ]hover:bg-[#9E6EFE] transition-all duration-200"
               >
                 Salvar
               </button>
@@ -405,7 +405,7 @@ export default function TransactionClient() {
               <select
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value)}
-                className="border rounded-lg px-2 h-10 text-sm border-purple-600"
+                className=" px-2 h-10 text-sm"
               >
                 <option value="mes-desc">Mais recente primeiro</option>
                 <option value="mes-asc">Mais antigo primeiro</option>
@@ -415,7 +415,7 @@ export default function TransactionClient() {
               <label className="block text-sm font-medium mb-1">
                 Filtrar por mês:
               </label>
-              <div className="flex flex-row border rounded-lg px-2 text-sm border-purple-600 h-10 items-center justify-between">
+              <div className="flex flex-row border rounded-xl px-2 text-sm border-purple-600 h-10 items-center justify-between">
                 <div
                   className="relative inline-flex items-center cursor-pointer"
                   onClick={() => setUseMonthFilter((prev) => !prev)}
@@ -426,7 +426,7 @@ export default function TransactionClient() {
                     onChange={() => {}}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-300 peer-checked:bg-purple-600 rounded-full peer transition-colors duration-300 ease-in-out"></div>
+                  <div className="w-11 h-6 bg-gray-300 peer-checked:bg-[#8B5CF6] rounded-full peer transition-colors duration-300 ease-in-out"></div>
                   <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ease-in-out peer-checked:translate-x-5"></div>
                   <span className="text-gray-700 ml-2 mr-2">Filtrar</span>
                 </div>

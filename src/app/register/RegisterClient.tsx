@@ -103,7 +103,7 @@ export default function RegisterPage() {
         onSubmit={handleRegister}
         className="bg-white shadow-lg rounded-lg p-8 w-full sm:w-[90%] md:w-[60%] lg:w-[40%] xl:w-[30%]"
       >
-        <p className="text-3xl font-semibold text-center text-purple-600 mb-6">
+        <p className="text-3xl font-semibold text-center text-[#8B5CF6] mb-6">
           Cadastro
         </p>
 
@@ -140,7 +140,7 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          className="w-full bg-purple-500 hover:bg-purple-600 text-white py-3 rounded-lg transition duration-200 ease-in-out cursor-pointer"
+          className="w-full bg-[#8B5CF6] hover:bg-[#9E6EFE] text-white py-3 rounded-lg transition duration-200 ease-in-out cursor-pointer"
         >
           Cadastrar
         </button>
@@ -148,7 +148,7 @@ export default function RegisterPage() {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Já tem uma conta?{" "}
-            <Link href="/login" className="text-purple-600 hover:underline">
+            <Link href="/login" className="text-[#8B5CF6] hover:underline">
               Entrar
             </Link>
           </p>

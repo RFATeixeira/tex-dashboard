@@ -106,7 +106,11 @@ export default function Presentation({ pageDescription }: PresentationProps) {
         .map((doc) => ({ id: doc.id, ...doc.data() }) as Ticket)
         .filter((ticket) => {
           const dueDate = dayjs(ticket.dueDate.toDate()).startOf("day");
-          const createdAt = ticket.createdAt?.toDate?.();
+
+          const createdAtRaw = ticket.createdAt;
+          const createdAt =
+            createdAtRaw instanceof Timestamp ? createdAtRaw.toDate() : null;
+
           const diff = dueDate.diff(today, "day");
 
           return (
@@ -143,7 +147,7 @@ export default function Presentation({ pageDescription }: PresentationProps) {
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-lg font-semibold">Notificações</h2>
               <XMarkIcon
-                className="font-semibold h-6 w-6 cursor-pointer hover:text-black transition-all duration-100"
+                className="font-semibold h-8 w-8 p-1 cursor-pointer rounded-lg hover:bg-purple-100 hover:text-purple-600 transition-all duration-100"
                 onClick={() => setShowNotifications(false)}
               />
             </div>
@@ -191,7 +195,7 @@ export default function Presentation({ pageDescription }: PresentationProps) {
             }}
             className="relative cursor-pointer"
           >
-            <BellIcon className="h-6 w-6 text-gray-700 hover:text-black transition duration-200" />
+            <BellIcon className="p-1 w-8 h-8 rounded-xl hover:bg-purple-100 transition-colors duration-200 text-gray-600 hover:text-purple-600" />
             {!seenNotifications && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs px-1.5">
                 {

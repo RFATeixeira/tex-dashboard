@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -104,7 +104,7 @@ export default function LoginPage() {
         onSubmit={handleLogin}
         className="bg-white shadow-lg rounded-lg p-8 w-full sm:w-[90%] md:w-[60%] lg:w-[40%] xl:w-[30%]"
       >
-        <h1 className="text-3xl font-semibold text-center text-purple-600 mb-6">
+        <h1 className="text-3xl font-semibold text-center text-[#8B5CF6] mb-6">
           Login
         </h1>
 
@@ -129,7 +129,7 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          className="w-full bg-purple-500 hover:bg-purple-600 text-white py-3 rounded-lg transition duration-200 ease-in-out cursor-pointer"
+          className="w-full bg-[#8B5CF6] hover:bg-[#9E6EFE] text-white py-3 rounded-lg transition duration-200 ease-in-out cursor-pointer"
           disabled={!email || !password}
         >
           Entrar
@@ -137,7 +137,7 @@ export default function LoginPage() {
         <div className="mt-4 text-center">
           <button
             onClick={handleGoogleLogin}
-            className="w-full bg-purple-500 hover:bg-purple-600 text-white py-3 rounded-lg transition duration-200 ease-in-out cursor-pointer flex items-center justify-center"
+            className="w-full bg-[#8B5CF6] hover:bg-[#9E6EFE] text-white py-3 rounded-lg transition duration-200 ease-in-out cursor-pointer flex items-center justify-center"
           >
             <FaGoogle className="mr-2" />
             Entrar com Google
@@ -147,7 +147,7 @@ export default function LoginPage() {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Não tem uma conta?{" "}
-            <Link href="/register" className="text-purple-600 hover:underline">
+            <Link href="/register" className="text-[#8B5CF6] hover:underline">
               Cadastre-se
             </Link>
           </p>

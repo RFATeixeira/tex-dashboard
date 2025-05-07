@@ -19,7 +19,7 @@ const MonthPicker: React.FC<MonthPickerProps> = ({
     <select
       value={selectedMonth}
       onChange={handleChange}
-      className="text-right"
+      className="text-right px-2"
     >
       <option value="2025-01">Janeiro-25</option>
       <option value="2025-02">Fevereiro-25</option>

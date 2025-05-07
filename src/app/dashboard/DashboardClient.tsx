@@ -420,7 +420,7 @@ export default function DashboardPage() {
 
         {/* Seção de seleção de ano */}
         <div className="mb-4">
-          <label htmlFor="yearSelect" className="text-lg font-medium mr-4">
+          <label htmlFor="yearSelect" className="text-lg font-medium mr-4 ">
             Selecione o ano:
           </label>
           {availableYears.length > 0 ? (
@@ -428,7 +428,7 @@ export default function DashboardPage() {
               id="yearSelect"
               value={selectedYear}
               onChange={handleYearChange}
-              className="p-2 rounded-lg border border-gray-300"
+              className="p-2"
             >
               {availableYears.map((year) => (
                 <option key={year} value={year}>
@@ -453,7 +453,7 @@ export default function DashboardPage() {
                   setChartType((prev) => (prev === "bar" ? "pie" : "bar"));
                   setUserChangedChart(true);
                 }}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
+                className="p-2 rounded-full hover:bg-purple-100 transition-colors duration-200 text-gray-600 hover:text-purple-600"
                 title="Alternar tipo de gráfico"
               >
                 {chartType === "bar" ? (
@@ -478,6 +478,7 @@ export default function DashboardPage() {
                         label={({ name, percent, value }) =>
                           `${name}: R$ ${value.toFixed(2)} (${(percent * 100).toFixed(1)}%)`
                         }
+                        className="focus:outline-0 text-wrap"
                       >
                         {pieData.map((entry, index) => (
                           <Cell
