@@ -29,6 +29,8 @@ export default function TransactionClient() {
     return `${year}-${month}`;
   });
 
+  const [useMonthFilter, setUseMonthFilter] = useState(true);
+
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -228,69 +230,40 @@ export default function TransactionClient() {
   };
 
   const ganhosOrdenados = useMemo(() => {
-    const filtered = ganhos.filter((item) => {
-      const date =
-        typeof item.date === "string"
-          ? new Date(item.date.split("-").reverse().join("-"))
-          : item.date?.toDate();
-      if (!date) return false;
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const [selYear, selMonth] = selectedMonth.split("-").map(Number);
-      return year === selYear && month === selMonth;
-    });
-
-    if (sortOption === "lancamento") {
-      return {
-        "Ordem de Lançamento": filtered.sort((a, b) => {
-          const dateA =
-            typeof a.date === "string"
-              ? new Date(a.date.split("-").reverse().join("-"))
-              : a.date?.toDate();
-          const dateB =
-            typeof b.date === "string"
-              ? new Date(b.date.split("-").reverse().join("-"))
-              : b.date?.toDate();
-          return dateA.getTime() - dateB.getTime();
-        }),
-      };
-    }
+    const filtered = useMonthFilter
+      ? ganhos.filter((item) => {
+          const date =
+            typeof item.date === "string"
+              ? new Date(item.date.split("-").reverse().join("-"))
+              : item.date?.toDate();
+          if (!date) return false;
+          const year = date.getFullYear();
+          const month = date.getMonth() + 1;
+          const [selYear, selMonth] = selectedMonth.split("-").map(Number);
+          return year === selYear && month === selMonth;
+        })
+      : ganhos;
 
     return sortByDateOption(filtered, sortOption);
-  }, [ganhos, sortOption, selectedMonth]);
+  }, [ganhos, sortOption, selectedMonth, useMonthFilter]);
 
   const gastosOrdenados = useMemo(() => {
-    const filtered = gastos.filter((item) => {
-      const rawDate = item.gastoDate || item.date;
-      const date =
-        typeof rawDate === "string"
-          ? new Date(rawDate.split("-").reverse().join("-"))
-          : rawDate?.toDate();
-      if (!date) return false;
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const [selYear, selMonth] = selectedMonth.split("-").map(Number);
-      return year === selYear && month === selMonth;
-    });
-
-    if (sortOption === "lancamento") {
-      return {
-        "Ordem de Lançamento": filtered.sort((a, b) => {
-          const dateA =
-            typeof a.date === "string"
-              ? new Date(a.date.split("-").reverse().join("-"))
-              : a.date?.toDate();
-          const dateB =
-            typeof b.date === "string"
-              ? new Date(b.date.split("-").reverse().join("-"))
-              : b.date?.toDate();
-          return dateA.getTime() - dateB.getTime();
-        }),
-      };
-    }
+    const filtered = useMonthFilter
+      ? gastos.filter((item) => {
+          const date =
+            typeof item.date === "string"
+              ? new Date(item.date.split("-").reverse().join("-"))
+              : item.date?.toDate();
+          if (!date) return false;
+          const year = date.getFullYear();
+          const month = date.getMonth() + 1;
+          const [selYear, selMonth] = selectedMonth.split("-").map(Number);
+          return year === selYear && month === selMonth;
+        })
+      : gastos;
 
     return sortByDateOption(filtered, sortOption);
-  }, [gastos, sortOption, selectedMonth]);
+  }, [gastos, sortOption, selectedMonth, useMonthFilter]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -438,22 +411,31 @@ export default function TransactionClient() {
                 <option value="mes-asc">Mais antigo primeiro</option>
               </select>
             </div>
-            <div className="">
-              <label className="block text-sm font-medium mb-1">
-                Filtrar por Mês:
+            <div className="border rounded-lg p-2 text-sm border-purple-600 flex lfex-row gap-4">
+              <label className="flex items-center gap-2 text-gray-700 h-6">
+                <input
+                  type="checkbox"
+                  checked={useMonthFilter}
+                  onChange={() => setUseMonthFilter((prev) => !prev)}
+                  className="accent-purple-600"
+                />
+                Filtrar por mês
               </label>
-              <MonthPicker
-                selectedMonth={selectedMonth}
-                onMonthChange={setSelectedMonth}
-              />
+
+              {useMonthFilter && (
+                <MonthPicker
+                  selectedMonth={selectedMonth}
+                  onChange={setSelectedMonth}
+                />
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div className="bg-white rounded-2xl shadow p-6">
               <h3 className="text-xl font-medium mb-4">Ganhos</h3>
-              {Object.keys(ganhosOrdenados).length === 0 ? (
-                <p className="text-sm text-gray-500">Sem ganhos registrados.</p>
+              {Object.keys(ganhosOrdenados ?? {}).length === 0 ? (
+                <p className="text-sm text-gray-500">Sem gastos registrados.</p>
               ) : (
                 Object.entries(ganhosOrdenados).map(([mes, itens], idx) => (
                   <div key={idx} className="mb-6">

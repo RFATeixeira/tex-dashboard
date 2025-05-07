@@ -1,28 +1,34 @@
+// MonthPicker.tsx (ou outro nome de arquivo)
+
+import React from "react";
+
 interface MonthPickerProps {
   selectedMonth: string;
-  onMonthChange: (month: string) => void;
+  onChange: (newMonth: string) => void;
 }
 
-const MonthPicker = ({ selectedMonth, onMonthChange }: MonthPickerProps) => {
-  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onMonthChange(e.target.value);
+const MonthPicker: React.FC<MonthPickerProps> = ({
+  selectedMonth,
+  onChange,
+}) => {
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onChange(e.target.value);
   };
 
   return (
-    <select
-      value={selectedMonth}
-      onChange={handleMonthChange}
-      className="border rounded-lg p-2 text-sm border-purple-600"
-    >
-      {/* Gerando as opções de meses para o último ano */}
-      {Array.from({ length: 12 }, (_, i) => {
-        const month = String(i + 1).padStart(2, "0");
-        return (
-          <option key={month} value={`${new Date().getFullYear()}-${month}`}>
-            {month}/{new Date().getFullYear()}
-          </option>
-        );
-      })}
+    <select value={selectedMonth} onChange={handleChange}>
+      <option value="2025-01">Janeiro-25</option>
+      <option value="2025-02">Fevereiro-25</option>
+      <option value="2025-03">Março-25</option>
+      <option value="2025-04">Abril-25</option>
+      <option value="2025-05">Maio-25</option>
+      <option value="2025-06">Junho-25</option>
+      <option value="2025-07">Julho-25</option>
+      <option value="2025-08">Agost-25</option>
+      <option value="2025-09">Setembro-25</option>
+      <option value="2025-11">Outubro-25</option>
+      <option value="2025-12">Novembro-25</option>
+      <option value="2025-13">Dezembro-25</option>
     </select>
   );
 };

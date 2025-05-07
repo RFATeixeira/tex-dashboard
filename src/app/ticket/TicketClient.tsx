@@ -145,7 +145,7 @@ export default function TicketPage() {
           amount,
           boletoCode,
           userId: user.uid,
-          updatedAt: serverTimestamp(),
+          createdAt: serverTimestamp(),
         };
 
         if (isEditing && selectedTicket) {

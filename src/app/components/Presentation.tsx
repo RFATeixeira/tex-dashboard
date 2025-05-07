@@ -26,6 +26,7 @@ export default function Presentation({ pageDescription }: PresentationProps) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [seenNotifications, setSeenNotifications] = useState(false);
+  const [lastSeen, setLastSeen] = useState<Date | null>(null);
 
   useEffect(() => {
     const auth = getAuth();
@@ -99,15 +100,21 @@ export default function Presentation({ pageDescription }: PresentationProps) {
       const today = dayjs().startOf("day");
 
       // Filtra as notificações próximas do vencimento (dentro de 3 dias)
+      const twoDaysAgo = dayjs().subtract(2, "day").startOf("day");
+
       const alerts = snapshot.docs
         .map((doc) => ({ id: doc.id, ...doc.data() }) as Ticket)
         .filter((ticket) => {
-          if (ticket.dueDate instanceof Timestamp) {
-            const dueDate = dayjs(ticket.dueDate.toDate()).startOf("day");
-            const diff = dueDate.diff(today, "day");
-            return diff >= 0 && diff <= 3; // Notificações de vencimento dentro de 3 dias
-          }
-          return false;
+          const dueDate = dayjs(ticket.dueDate.toDate()).startOf("day");
+          const createdAt = ticket.createdAt?.toDate?.();
+          const diff = dueDate.diff(today, "day");
+
+          return (
+            diff >= 0 &&
+            diff <= 3 &&
+            createdAt &&
+            dayjs(createdAt).isAfter(twoDaysAgo)
+          );
         });
 
       console.log("Alerts filtrados:", alerts); // Log para verificar as notificações filtradas
@@ -119,7 +126,6 @@ export default function Presentation({ pageDescription }: PresentationProps) {
       // Verifica se há notificações mais recentes que a data de última visualização
       const unseen = alerts.some((ticket) => {
         const created = ticket.createdAt?.toDate?.() || null;
-        console.log("Ticket criado em:", created); // Log para verificar a data de criação do ticket
         return created && (!lastSeen || created > lastSeen);
       });
 
@@ -186,9 +192,14 @@ export default function Presentation({ pageDescription }: PresentationProps) {
             className="relative cursor-pointer"
           >
             <BellIcon className="h-6 w-6 text-gray-700 hover:text-black transition duration-200" />
-            {notifications.length > 0 && !seenNotifications && (
+            {!seenNotifications && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs px-1.5">
-                {notifications.length}
+                {
+                  notifications.filter((n) => {
+                    const created = n.createdAt?.toDate?.();
+                    return created && (!lastSeen || created > lastSeen);
+                  }).length
+                }
               </span>
             )}
           </button>
